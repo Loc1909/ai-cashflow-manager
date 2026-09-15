@@ -23,20 +23,20 @@ class TransactionType(str, enum.Enum):
 
 
 class TransactionCategory(str, enum.Enum):
-    # Thu nhập
-    SALES = "SALES"          # Doanh thu bán hàng
-    SERVICE = "SERVICE"      # Doanh thu dịch vụ
-    OTHER_INCOME = "OTHER_INCOME"  # Thu khác
+    # Income
+    SALES = "SALES"              # Product sales revenue
+    SERVICE = "SERVICE"          # Service revenue
+    OTHER_INCOME = "OTHER_INCOME"  # Other income
 
-    # Chi phí
-    FOOD = "FOOD"            # Thực phẩm/nguyên liệu
-    SUPPLIES = "SUPPLIES"    # Vật tư/dụng cụ
-    SALARY = "SALARY"        # Lương nhân viên
-    UTILITIES = "UTILITIES"  # Điện/nước/internet
-    RENT = "RENT"            # Thuê mặt bằng
-    TRANSPORT = "TRANSPORT"  # Vận chuyển/xăng xe
-    MARKETING = "MARKETING"  # Quảng cáo/marketing
-    OTHER = "OTHER"          # Khác
+    # Expense
+    FOOD = "FOOD"                # Food/ingredients
+    SUPPLIES = "SUPPLIES"        # Supplies/tools
+    SALARY = "SALARY"            # Staff salary
+    UTILITIES = "UTILITIES"      # Electricity/water/internet
+    RENT = "RENT"                # Premises rent
+    TRANSPORT = "TRANSPORT"      # Transport/fuel
+    MARKETING = "MARKETING"      # Advertising/marketing
+    OTHER = "OTHER"              # Other
 
 
 class Transaction(Base):
@@ -50,11 +50,6 @@ class Transaction(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-    )
-    receipt_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("receipts.id", ondelete="SET NULL"),
-        nullable=True,
     )
 
     type: Mapped[TransactionType] = mapped_column(
@@ -82,7 +77,6 @@ class Transaction(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", lazy="select")  # type: ignore[name-defined]
-    receipt: Mapped["Receipt | None"] = relationship("Receipt", back_populates="transaction", lazy="select")  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f"<Transaction id={self.id} type={self.type} amount={self.amount}>"

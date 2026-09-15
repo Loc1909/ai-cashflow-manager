@@ -19,6 +19,10 @@ async def get_monthly_report(
     db: DbSession,
     year: int = Query(default=date.today().year, ge=2020, le=2100),
     month: int = Query(default=date.today().month, ge=1, le=12),
+    current_balance: float | None = Query(
+        default=None,
+        description="Số dư tiền mặt hiện tại (tuỳ chọn) — dùng để tính quỹ tiền mặt còn trụ được bao lâu",
+    ),
 ) -> ReportResponse:
     """
     Returns monthly summary of income/expense + AI insights.
@@ -29,6 +33,7 @@ async def get_monthly_report(
         user_id=current_user.id,
         year=year,
         month=month,
+        current_balance=current_balance,
     )
 
 

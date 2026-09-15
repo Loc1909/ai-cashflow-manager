@@ -24,7 +24,7 @@ async def get_current_user(
     if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ hoặc đã hết hạn",
+            detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -33,7 +33,7 @@ async def get_current_user(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ",
+            detail="Invalid token",
         )
 
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))  # noqa: E712
@@ -42,7 +42,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Người dùng không tồn tại hoặc đã bị vô hiệu hóa",
+            detail="User not found or account is disabled",
         )
     return user
 

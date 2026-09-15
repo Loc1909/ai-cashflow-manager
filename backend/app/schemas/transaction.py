@@ -1,19 +1,18 @@
-import uuid
 from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
+import uuid
 
 from app.models.transaction import TransactionCategory, TransactionType
 
 
 class TransactionCreate(BaseModel):
     type: TransactionType
-    amount: float = Field(..., gt=0, description="Số tiền (VND)")
+    amount: float = Field(..., gt=0, description="Amount in VND")
     category: TransactionCategory
     description: str | None = Field(None, max_length=500)
     merchant_name: str | None = Field(None, max_length=255)
     transaction_date: date
-    receipt_id: uuid.UUID | None = None
 
 
 class TransactionUpdate(BaseModel):
@@ -30,7 +29,6 @@ class TransactionRead(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
-    receipt_id: uuid.UUID | None
     type: TransactionType
     amount: float
     category: TransactionCategory

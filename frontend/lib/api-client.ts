@@ -56,19 +56,6 @@ export const transactionApi = {
   delete: (id: string) => api.delete(`/transactions/${id}`),
 };
 
-// --- Receipts ---
-export const receiptApi = {
-  scan: (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    return api.post("/receipts/scan", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
-  confirm: (receiptId: string, transaction: object) =>
-    api.post(`/receipts/${receiptId}/confirm`, { transaction }),
-  reject: (receiptId: string) => api.delete(`/receipts/${receiptId}`),
-};
 
 // --- Reports ---
 export const reportApi = {

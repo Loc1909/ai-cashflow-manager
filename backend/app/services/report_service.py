@@ -1,122 +1,77 @@
+"""
+report_service.py
+-------------------
+Lấy giao dịch của user trong 1 tháng từ PostgreSQL (async SQLAlchemy),
+chạy qua AI engine (app/services/ai_analysis/) và trả về schema báo cáo.
+"""
+from __future__ import annotations
+
+import calendar
 import uuid
-from calendar import monthrange
 from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.transaction import Transaction, TransactionCategory, TransactionType
-from app.schemas.report import (
-    AIInsights,
-    CategoryBreakdown,
-    DailyCashflow,
-    MonthlySummary,
-    ReportResponse,
-)
-from app.services import ai_service
+from app.models.transaction import Transaction
+from app.schemas.report import CategoryAmount, MonthlySummary, ReportResponse
+from app.services.ai_analysis.cashflow_analyzer import CashflowAnalyzer
+from app.services.ai_analysis.insight_engine import InsightEngine
+from app.services.ai_analysis.labels import label as category_label
 
 
-async def get_monthly_summary(
-    db: AsyncSession,
-    user_id: uuid.UUID,
-    year: int,
-    month: int,
-) -> MonthlySummary:
-    _, days_in_month = monthrange(year, month)
-    date_from = date(year, month, 1)
-    date_to = date(year, month, days_in_month)
-
-    # All transactions for the period
+async def _get_month_transactions(
+    db: AsyncSession, user_id: uuid.UUID, year: int, month: int
+) -> list[Transaction]:
+    start = date(year, month, 1)
+    end = date(year, month, calendar.monthrange(year, month)[1])
     result = await db.execute(
-        select(Transaction).where(
-            Transaction.user_id == user_id,
-            Transaction.transaction_date >= date_from,
-            Transaction.transaction_date <= date_to,
-        )
+        select(Transaction)
+        .where(Transaction.user_id == user_id)
+        .where(Transaction.transaction_date >= start)
+        .where(Transaction.transaction_date <= end)
+        .order_by(Transaction.transaction_date)
     )
-    transactions = list(result.scalars().all())
+    return list(result.scalars().all())
 
-    # Aggregate totals
-    total_income = sum(float(t.amount) for t in transactions if t.type == TransactionType.income)
-    total_expense = sum(float(t.amount) for t in transactions if t.type == TransactionType.expense)
 
-    # Category breakdowns
-    expense_by_cat: dict[str, float] = {}
-    income_by_cat: dict[str, float] = {}
-    expense_count: dict[str, int] = {}
-    income_count: dict[str, int] = {}
-
-    for t in transactions:
-        cat = t.category.value
-        amount = float(t.amount)
-        if t.type == TransactionType.expense:
-            expense_by_cat[cat] = expense_by_cat.get(cat, 0) + amount
-            expense_count[cat] = expense_count.get(cat, 0) + 1
-        else:
-            income_by_cat[cat] = income_by_cat.get(cat, 0) + amount
-            income_count[cat] = income_count.get(cat, 0) + 1
-
-    top_expense = sorted(
-        [
-            CategoryBreakdown(
-                category=TransactionCategory(cat),
-                total_amount=amt,
-                count=expense_count[cat],
-                percentage=(amt / total_expense * 100) if total_expense > 0 else 0,
-            )
-            for cat, amt in expense_by_cat.items()
-        ],
-        key=lambda x: x.total_amount,
-        reverse=True,
-    )[:5]
-
-    top_income = sorted(
-        [
-            CategoryBreakdown(
-                category=TransactionCategory(cat),
-                total_amount=amt,
-                count=income_count[cat],
-                percentage=(amt / total_income * 100) if total_income > 0 else 0,
-            )
-            for cat, amt in income_by_cat.items()
-        ],
-        key=lambda x: x.total_amount,
-        reverse=True,
-    )[:5]
-
-    # Daily cashflow
-    daily: dict[date, dict] = {
-        date(year, month, d): {"income": 0.0, "expense": 0.0}
-        for d in range(1, days_in_month + 1)
-    }
-    for t in transactions:
-        d = t.transaction_date
-        if t.type == TransactionType.income:
-            daily[d]["income"] += float(t.amount)
-        else:
-            daily[d]["expense"] += float(t.amount)
-
-    daily_cashflow = [
-        DailyCashflow(
-            date=d,
-            income=vals["income"],
-            expense=vals["expense"],
-            net=vals["income"] - vals["expense"],
+def _to_category_amounts(by_category: list[dict]) -> list[CategoryAmount]:
+    return [
+        CategoryAmount(
+            category=item["category"],
+            category_label=category_label(item["category"]),
+            amount=item["amount"],
+            share_pct=item["share_pct"],
         )
-        for d, vals in sorted(daily.items())
+        for item in by_category
     ]
 
+
+def _build_summary(
+    year: int, month: int, totals: dict, expense_breakdown: dict, income_breakdown: dict
+) -> MonthlySummary:
     return MonthlySummary(
         year=year,
         month=month,
-        total_income=total_income,
-        total_expense=total_expense,
-        net_cashflow=total_income - total_expense,
-        transaction_count=len(transactions),
-        top_expense_categories=top_expense,
-        top_income_categories=top_income,
-        daily_cashflow=daily_cashflow,
+        total_income=totals.get("total_income", 0),
+        total_expense=totals.get("total_expense", 0),
+        net=totals.get("net", 0),
+        transaction_count=totals.get("num_transactions", 0),
+        income_by_category=_to_category_amounts(income_breakdown.get("by_category", [])),
+        expense_by_category=_to_category_amounts(expense_breakdown.get("by_category", [])),
     )
+
+
+async def get_monthly_summary(
+    db: AsyncSession, user_id: uuid.UUID, year: int, month: int
+) -> MonthlySummary:
+    """Tổng hợp thu/chi trong tháng, KHÔNG chạy AI insight — dùng cho màn hình nhẹ/nhanh."""
+    transactions = await _get_month_transactions(db, user_id, year, month)
+    analyzer = CashflowAnalyzer(transactions)
+    totals = analyzer.totals()
+    expense_breakdown = analyzer.category_breakdown(tx_type="expense")
+    income_breakdown = analyzer.category_breakdown(tx_type="income")
+    return _build_summary(year, month, totals, expense_breakdown, income_breakdown)
 
 
 async def get_report_with_insights(
@@ -124,32 +79,34 @@ async def get_report_with_insights(
     user_id: uuid.UUID,
     year: int,
     month: int,
+    current_balance: float | None = None,
 ) -> ReportResponse:
-    summary = await get_monthly_summary(db, user_id, year, month)
+    """
+    Báo cáo đầy đủ: tổng quan, phân bổ danh mục, độ biến động thu nhập, xu
+    hướng, giao dịch bất thường (Isolation Forest), dự báo, và danh sách
+    nhận xét/khuyến nghị AI ưu tiên theo mức độ quan trọng.
 
-    insights: AIInsights | None = None
-    if summary.transaction_count > 0:
-        insights = await ai_service.generate_insights(
-            year=year,
-            month=month,
-            total_income=summary.total_income,
-            total_expense=summary.total_expense,
-            expense_breakdown=[
-                {
-                    "category": c.category.value,
-                    "total_amount": c.total_amount,
-                    "percentage": c.percentage,
-                }
-                for c in summary.top_expense_categories
-            ],
-            income_breakdown=[
-                {
-                    "category": c.category.value,
-                    "total_amount": c.total_amount,
-                    "percentage": c.percentage,
-                }
-                for c in summary.top_income_categories
-            ],
-        )
+    `current_balance`: số dư tiền mặt hiện tại (tuỳ chọn) — nếu có sẽ tính
+    thêm chỉ số "quỹ tiền mặt còn trụ được bao lâu".
+    """
+    transactions = await _get_month_transactions(db, user_id, year, month)
+    engine = InsightEngine(transactions, current_balance=current_balance)
+    report = engine.build_report()
 
-    return ReportResponse(summary=summary, ai_insights=insights)
+    summary = _build_summary(
+        year,
+        month,
+        report["summary"],
+        report["category_breakdown"],
+        report.get("income_category_breakdown", {"by_category": []}),
+    )
+
+    return ReportResponse(
+        summary=summary,
+        income_volatility=report.get("income_volatility"),
+        trend=report.get("trend"),
+        anomalies=report.get("anomalies", []),
+        forecast=report.get("forecast") or None,
+        cash_runway=report.get("cash_runway"),
+        insights=report.get("insights", []),
+    )

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
 import {
   LayoutDashboard,
-  ScanLine,
   List,
   BarChart2,
   Loader2,
@@ -16,7 +15,6 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/", icon: LayoutDashboard, label: "Tổng quan" },
   { href: "/transactions", icon: List, label: "Giao dịch" },
-  { href: "/scan", icon: ScanLine, label: "Quét" },
   { href: "/reports", icon: BarChart2, label: "Báo cáo" },
 ];
 
@@ -57,7 +55,6 @@ export default function DashboardLayout({
             {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
               const isActive =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);
-              const isScan = href === "/scan";
 
               return (
                 <Link
@@ -66,21 +63,13 @@ export default function DashboardLayout({
                   id={`nav-${label.toLowerCase().replace(/\s/g, "-")}`}
                   className={cn(
                     "flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all",
-                    isScan
-                      ? "bg-indigo-600 shadow-lg shadow-indigo-500/30 -mt-4 p-3 rounded-2xl"
-                      : isActive
+                    isActive
                       ? "text-indigo-400"
                       : "text-slate-500 hover:text-slate-300"
                   )}
                 >
-                  <Icon
-                    className={cn(
-                      isScan ? "w-6 h-6 text-white" : "w-5 h-5"
-                    )}
-                  />
-                  {!isScan && (
-                    <span className="text-[10px] font-medium">{label}</span>
-                  )}
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">{label}</span>
                 </Link>
               );
             })}

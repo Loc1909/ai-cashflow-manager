@@ -13,7 +13,6 @@ async def create(
 ) -> Transaction:
     transaction = Transaction(
         user_id=user_id,
-        receipt_id=data.receipt_id,
         type=data.type,
         amount=data.amount,
         category=data.category,

@@ -1,23 +1,17 @@
+import uuid
 from datetime import date
-from typing import Any
+from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.models.transaction import TransactionCategory, TransactionType
+from app.models.transaction import TransactionCategory
 
 
-class CategoryBreakdown(BaseModel):
+class CategoryAmount(BaseModel):
     category: TransactionCategory
-    total_amount: float
-    count: int
-    percentage: float
-
-
-class DailyCashflow(BaseModel):
-    date: date
-    income: float
-    expense: float
-    net: float
+    category_label: str
+    amount: float
+    share_pct: float
 
 
 class MonthlySummary(BaseModel):
@@ -25,23 +19,59 @@ class MonthlySummary(BaseModel):
     month: int
     total_income: float
     total_expense: float
-    net_cashflow: float
+    net: float
     transaction_count: int
-    top_expense_categories: list[CategoryBreakdown]
-    top_income_categories: list[CategoryBreakdown]
-    daily_cashflow: list[DailyCashflow]
+    income_by_category: list[CategoryAmount] = Field(default_factory=list)
+    expense_by_category: list[CategoryAmount] = Field(default_factory=list)
 
 
-class AIInsights(BaseModel):
-    """AI-generated cash flow insights and suggestions."""
-    summary: str                        # Tóm tắt ngắn gọn
-    health_score: int                   # Điểm sức khỏe tài chính 0-100
-    insights: list[str]                 # Danh sách nhận xét
-    suggestions: list[str]              # Gợi ý tối ưu
-    warning_categories: list[str]       # Danh mục chi phí cần chú ý
-    generated_at: str
+class InsightItem(BaseModel):
+    level: Literal["critical", "warning", "good", "info"]
+    title: str
+    message: str
+    action: str
+
+
+class AnomalyItem(BaseModel):
+    transaction_id: uuid.UUID | None = None
+    transaction_date: date
+    category: TransactionCategory
+    category_label: str
+    amount: float
+    description: str | None = None
+    anomaly_score: float
+    method: str
+    reason: str
+
+
+class TrendData(BaseModel):
+    slope: float
+    direction: Literal["tang", "giam", "on_dinh", "khong_du_du_lieu"]
+
+
+class VolatilityData(BaseModel):
+    cv: float | None
+    mean: float
+
+
+class ForecastData(BaseModel):
+    forecast_total: float | None
+    daily_forecast: list[float] = Field(default_factory=list)
+    residual_std: float | None = None
+    confidence: str
+
+
+class CashRunway(BaseModel):
+    runway_days: float | None
+    avg_daily_net: float
+
 
 
 class ReportResponse(BaseModel):
     summary: MonthlySummary
-    ai_insights: AIInsights | None = None
+    income_volatility: VolatilityData | None = None
+    trend: TrendData | None = None
+    anomalies: list[AnomalyItem] = Field(default_factory=list)
+    forecast: ForecastData | None = None
+    cash_runway: CashRunway | None = None
+    insights: list[InsightItem] = Field(default_factory=list)
