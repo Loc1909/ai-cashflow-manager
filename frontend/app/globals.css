@@ -3,10 +3,10 @@
 @theme {
   --color-primary: #6366f1;
   --color-primary-dark: #4f46e5;
-  --color-surface: #1e293b;
-  --color-surface-elevated: #334155;
-  --color-income: #22c55e;
-  --color-expense: #ef4444;
+  --color-surface: #18181b;
+  --color-surface-elevated: #27272a;
+  --color-income: #10b981; /* emerald-500 for a more premium green */
+  --color-expense: #f43f5e; /* rose-500 for a more premium red */
 }
 
 :root {
@@ -25,8 +25,8 @@ html {
 }
 
 body {
-  background: #0f172a;
-  color: #f1f5f9;
+  background: #09090b; /* zinc-950 for deep premium background */
+  color: #fafafa; /* zinc-50 */
   font-family: var(--font-sans);
   min-height: 100dvh;
   overscroll-behavior-y: contain;
@@ -40,60 +40,48 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #3f3f46; /* zinc-700 */
   border-radius: 2px;
 }
 
 /* Glass morphism card */
 .glass {
-  background: rgba(30, 41, 59, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: rgba(24, 24, 27, 0.65); /* zinc-900 with transparency */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
 }
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Income / Expense badges */
-.badge-income {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-}
-
-.badge-expense {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
 /* Animated bottom nav indicator */
 .nav-active {
-  color: #6366f1;
+  color: #818cf8; /* indigo-400 */
   position: relative;
 }
 
 /* Smooth page entry */
 .fade-in {
-  animation: fadeIn 0.25s ease both;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 /* View Transitions — page-level lateral fade */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 200ms;
-  animation-timing-function: ease;
+  animation-duration: 250ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Reduce motion: disable all animations */
