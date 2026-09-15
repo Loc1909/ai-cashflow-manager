@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { reportApi, transactionApi } from "@/lib/api-client";
+import type { ReportResponse } from "@/lib/types/report";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
 import {
   TrendingUp,
@@ -14,6 +15,11 @@ import {
   ArrowRight,
   Wallet,
   LogOut,
+  Sparkles,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
 import {
   BarChart,
@@ -30,11 +36,11 @@ export default function DashboardPage() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const { data: report } = useQuery({
-    queryKey: ["report", currentYear, currentMonth],
-    queryFn: () =>
-      reportApi.summary(currentYear, currentMonth).then((r) => r.data),
-  });
+  const { data: report } = useQuery<ReportResponse>({
+  queryKey: ["report", currentYear, currentMonth],
+  queryFn: () =>
+    reportApi.monthly(currentYear, currentMonth).then((r) => r.data),
+});
 
   const { data: recentTx } = useQuery({
     queryKey: ["transactions", "recent"],
@@ -44,7 +50,8 @@ export default function DashboardPage() {
         .then((r) => r.data),
   });
 
-  const summary = report;
+  const summary = report?.summary;
+  const insights = report?.insights ?? [];
   const netCashflow = summary
     ? summary.total_income - summary.total_expense
     : 0;
@@ -206,7 +213,100 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
       )}
+      {/* AI Insights */}
+{insights.length > 0 && (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between px-1">
+      <div className="flex items-center gap-2">
+        <Sparkles
+          className="w-4 h-4 text-indigo-400"
+          aria-hidden="true"
+        />
 
+        <h2 className="text-white text-sm font-semibold">
+          Phân tích AI
+        </h2>
+      </div>
+
+      <Link
+        href="/reports"
+        className="text-indigo-400 text-xs font-medium flex items-center gap-1 hover:text-indigo-300 transition-colors"
+      >
+        Xem chi tiết
+        <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+      </Link>
+    </div>
+
+    <div className="space-y-2.5">
+      {insights.slice(0, 3).map((item, idx) => {
+        const isCritical = item.level === "critical";
+        const isWarning = item.level === "warning";
+        const isGood = item.level === "good";
+
+        return (
+          <div
+            key={`dashboard-insight-${idx}`}
+            className={`rounded-2xl p-4 border ${
+              isCritical
+                ? "border-rose-500/20 bg-rose-950/20"
+                : isWarning
+                ? "border-amber-500/20 bg-amber-950/20"
+                : isGood
+                ? "border-emerald-500/20 bg-emerald-950/20"
+                : "border-indigo-500/20 bg-indigo-950/20"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  isCritical
+                    ? "bg-rose-500/20"
+                    : isWarning
+                    ? "bg-amber-500/20"
+                    : isGood
+                    ? "bg-emerald-500/20"
+                    : "bg-indigo-500/20"
+                }`}
+              >
+                {isCritical ? (
+                  <AlertCircle
+                    className="w-4 h-4 text-rose-400"
+                    aria-hidden="true"
+                  />
+                ) : isWarning ? (
+                  <AlertTriangle
+                    className="w-4 h-4 text-amber-400"
+                    aria-hidden="true"
+                  />
+                ) : isGood ? (
+                  <CheckCircle2
+                    className="w-4 h-4 text-emerald-400"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Info
+                    className="w-4 h-4 text-indigo-400"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-sm font-semibold leading-tight">
+                  {item.title}
+                </p>
+
+                <p className="text-zinc-400 text-xs leading-relaxed mt-1.5">
+                  {item.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
       {/* Recent Transactions */}
       <div>
         <div className="flex items-center justify-between mb-4">

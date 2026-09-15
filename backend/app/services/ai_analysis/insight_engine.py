@@ -12,6 +12,7 @@ from typing import Any, Optional
 from app.services.ai_analysis.anomaly_detector import detect_anomalies
 from app.services.ai_analysis.cashflow_analyzer import CashflowAnalyzer
 from app.services.ai_analysis.forecaster import forecast_net_cashflow
+from app.services.ai_analysis.gemini_service import generate_insights
 from app.services.ai_analysis.labels import label as category_label
 
 
@@ -24,7 +25,7 @@ class InsightEngine:
         self.analyzer = CashflowAnalyzer(transactions)
         self.current_balance = current_balance
 
-    def build_report(self) -> dict[str, Any]:
+    async def build_report(self) -> dict[str, Any]:
         if self.analyzer.is_empty():
             empty_breakdown = {"by_category": [], "hhi": 0.0, "top_category": None}
             return {
@@ -57,9 +58,32 @@ class InsightEngine:
         if self.current_balance is not None:
             runway = self.analyzer.cash_runway_days(self.current_balance)
 
-        insights = self._generate_insights(
+        rule_insights = self._generate_insights(
             totals, expense_breakdown, volatility, trend, anomalies, forecast, runway
         )
+
+        # LLM chỉ nhận số liệu đã được tính, không nhận toàn bộ giao dịch.
+        # Nếu Gemini lỗi/timeout thì giữ nguyên rule_insights.
+        ai_context = {
+            "summary": totals,
+            "expense_breakdown": expense_breakdown.get("by_category", [])[:8],
+            "income_breakdown": income_breakdown.get("by_category", [])[:8],
+            "income_volatility": volatility,
+            "trend": trend,
+            "top_anomalies": anomalies[:5],
+            "forecast": forecast,
+            "cash_runway": runway,
+            "rule_insights": rule_insights[:5],
+        }
+        ai_insights = await generate_insights(ai_context)
+
+        # Rule engine là lớp an toàn: giữ các cảnh báo critical/warning quan trọng.
+        # Gemini bổ sung cách diễn giải tự nhiên. Nếu Gemini không trả kết quả,
+        # report vẫn hoạt động đầy đủ.
+        insights = rule_insights
+        if ai_insights:
+            critical_rules = [i for i in rule_insights if i["level"] == "critical"]
+            insights = critical_rules + ai_insights
 
         return {
             "summary": totals,

@@ -1,5 +1,8 @@
 import axios from "axios";
-
+import type {
+  ReportResponse,
+  MonthlySummary,
+} from "@/lib/types/report";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export const api = axios.create({
@@ -60,7 +63,12 @@ export const transactionApi = {
 // --- Reports ---
 export const reportApi = {
   monthly: (year: number, month: number) =>
-    api.get("/reports/monthly", { params: { year, month } }),
+    api.get<ReportResponse>("/reports/monthly", {
+      params: { year, month },
+    }),
+
   summary: (year: number, month: number) =>
-    api.get("/reports/summary", { params: { year, month } }),
+    api.get<MonthlySummary>("/reports/summary", {
+      params: { year, month },
+    }),
 };

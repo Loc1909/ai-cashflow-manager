@@ -91,7 +91,7 @@ async def get_report_with_insights(
     """
     transactions = await _get_month_transactions(db, user_id, year, month)
     engine = InsightEngine(transactions, current_balance=current_balance)
-    report = engine.build_report()
+    report = await engine.build_report()
 
     summary = _build_summary(
         year,
