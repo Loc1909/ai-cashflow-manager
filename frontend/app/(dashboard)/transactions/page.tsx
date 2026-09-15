@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { transactionApi } from "@/lib/api-client";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
-import { Plus, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown } from "lucide-react";
 
 type TxType = "all" | "income" | "expense";
 
@@ -34,33 +34,41 @@ export default function TransactionsPage() {
   return (
     <div className="p-4 space-y-4 fade-in">
       <div className="flex items-center justify-between pt-2">
-        <h2 className="text-xl font-bold text-white">Giao dịch</h2>
+        <h1 className="text-xl font-bold text-white">Giao dịch</h1>
         <Link
           href="/transactions/new"
           id="btn-add-transaction"
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-3 py-2 rounded-xl transition"
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-3 py-2 rounded-xl transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
           Thêm
         </Link>
       </div>
 
       {/* Type filter tabs */}
-      <div className="flex gap-1 glass rounded-xl p-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            id={`tab-${tab.key}`}
-            onClick={() => { setTypeFilter(tab.key); setPage(1); }}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
-              typeFilter === tab.key
-                ? "bg-indigo-600 text-white shadow"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex gap-1 glass rounded-xl p-1" role="tablist" aria-label="Bộ lọc giao dịch">
+        {tabs.map((tab) => {
+          const isSelected = typeFilter === tab.key;
+          return (
+            <button
+              key={tab.key}
+              id={`tab-${tab.key}`}
+              role="tab"
+              aria-selected={isSelected}
+              onClick={() => {
+                setTypeFilter(tab.key);
+                setPage(1);
+              }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none ${
+                isSelected
+                  ? "bg-indigo-600 text-white shadow"
+                  : "text-slate-400 hover:text-slate-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* List */}
@@ -77,10 +85,11 @@ export default function TransactionsPage() {
           <div className="glass rounded-2xl p-8 text-center">
             <p className="text-slate-400 text-sm">Không có giao dịch nào</p>
             <Link
-              href="/scan"
-              className="inline-block mt-3 text-indigo-400 text-sm hover:text-indigo-300 transition"
+              href="/transactions/new"
+              id="btn-empty-add-tx"
+              className="inline-block mt-3 text-indigo-400 text-sm font-medium hover:text-indigo-300 transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none rounded"
             >
-              Quét hóa đơn ngay →
+              + Thêm giao dịch ngay →
             </Link>
           </div>
         )}
@@ -104,9 +113,9 @@ export default function TransactionsPage() {
               }`}
             >
               {tx.type === "income" ? (
-                <TrendingUp className="w-4 h-4 text-green-400" />
+                <TrendingUp className="w-4 h-4 text-green-400" aria-hidden="true" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-red-400" />
+                <TrendingDown className="w-4 h-4 text-red-400" aria-hidden="true" />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -136,17 +145,19 @@ export default function TransactionsPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-4 py-2 glass rounded-xl text-sm text-slate-300 disabled:opacity-40 transition"
+            aria-label="Trang trước"
+            className="px-4 py-2 glass rounded-xl text-sm text-slate-300 disabled:opacity-40 transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
           >
             ← Trước
           </button>
-          <span className="px-4 py-2 text-slate-400 text-sm">
+          <span className="px-4 py-2 text-slate-400 text-sm" aria-live="polite">
             {page} / {Math.ceil(data.total / 20)}
           </span>
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={page >= Math.ceil(data.total / 20)}
-            className="px-4 py-2 glass rounded-xl text-sm text-slate-300 disabled:opacity-40 transition"
+            aria-label="Trang sau"
+            className="px-4 py-2 glass rounded-xl text-sm text-slate-300 disabled:opacity-40 transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
           >
             Sau →
           </button>

@@ -26,9 +26,9 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Quét hóa đơn",
-      "url": "/scan",
-      "description": "Quét hóa đơn mới"
+      "name": "Báo cáo",
+      "url": "/reports",
+      "description": "Xem báo cáo và phân tích AI"
     },
     {
       "name": "Thêm giao dịch",

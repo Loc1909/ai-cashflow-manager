@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin", "vietnamese"] });
 export const metadata: Metadata = {
   title: "AI Quản Lý Thu Chi — Thông Minh Hơn Mỗi Ngày",
   description:
-    "Quản lý thu chi cho hộ kinh doanh nhỏ: chụp ảnh hóa đơn, AI tự phân loại, báo cáo dòng tiền tức thì.",
+    "Quản lý thu chi cho hộ kinh doanh nhỏ: nhập giao dịch nhanh, AI phân tích dòng tiền, báo cáo tức thì.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

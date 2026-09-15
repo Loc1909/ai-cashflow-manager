@@ -31,7 +31,8 @@ const schema = z.object({
   transaction_date: z.string().min(1),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormOutput = z.output<typeof schema>;
 
 export default function NewTransactionPage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function NewTransactionPage() {
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({
+  } = useForm<FormInput, any, FormOutput>({
     resolver: zodResolver(schema),
     defaultValues: {
       type: "expense",
@@ -55,10 +56,11 @@ export default function NewTransactionPage() {
   const txType = watch("type");
   const filteredCats = CATEGORIES.filter((c) => c.type === txType || c.value === "OTHER");
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: FormOutput) => {
     await transactionApi.create(data);
     await qc.invalidateQueries({ queryKey: ["transactions"] });
     await qc.invalidateQueries({ queryKey: ["report"] });
+    await qc.invalidateQueries({ queryKey: ["report-full"] });
     router.push("/transactions");
   };
 
@@ -66,28 +68,33 @@ export default function NewTransactionPage() {
     <div className="p-4 space-y-4 fade-in">
       <div className="flex items-center gap-3 pt-2">
         <button
+          type="button"
           onClick={() => router.back()}
-          className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
+          aria-label="Quay lại"
+          className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4" aria-hidden="true" />
         </button>
-        <h2 className="text-xl font-bold text-white">Thêm giao dịch</h2>
+        <h1 className="text-xl font-bold text-white">Thêm giao dịch</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Type toggle */}
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Loại giao dịch">
           {(["expense", "income"] as const).map((t) => (
             <button
               key={t}
               type="button"
-              onClick={() => { setValue("type", t); setValue("category", t === "expense" ? "OTHER" : "SALES"); }}
-              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition ${
+              onClick={() => {
+                setValue("type", t);
+                setValue("category", t === "expense" ? "OTHER" : "SALES");
+              }}
+              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none ${
                 txType === t
                   ? t === "expense"
-                    ? "bg-red-500/20 text-red-400 border border-red-500/40"
-                    : "bg-green-500/20 text-green-400 border border-green-500/40"
-                  : "bg-slate-800 text-slate-400"
+                    ? "bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm"
+                    : "bg-green-500/20 text-green-400 border border-green-500/40 shadow-sm"
+                  : "bg-slate-800 text-slate-400 hover:text-slate-300"
               }`}
             >
               {t === "expense" ? "💸 Chi tiêu" : "💰 Thu nhập"}
@@ -97,33 +104,46 @@ export default function NewTransactionPage() {
 
         {/* Amount */}
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Số tiền (VND) *</label>
+          <label htmlFor="field-amount" className="text-xs text-slate-400 mb-1.5 block">
+            Số tiền (VND) *
+          </label>
           <input
+            id="field-amount"
             {...register("amount")}
             type="number"
             placeholder="0"
             className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3.5 text-white text-xl font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
           />
-          {errors.amount && <p className="text-red-400 text-xs mt-1">{errors.amount.message}</p>}
+          {errors.amount && (
+            <p className="text-red-400 text-xs mt-1">{errors.amount.message}</p>
+          )}
         </div>
 
         {/* Category */}
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Danh mục *</label>
+          <label htmlFor="field-category" className="text-xs text-slate-400 mb-1.5 block">
+            Danh mục *
+          </label>
           <select
+            id="field-category"
             {...register("category")}
             className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
           >
             {filteredCats.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
             ))}
           </select>
         </div>
 
         {/* Merchant */}
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Tên cửa hàng / đơn vị</label>
+          <label htmlFor="field-merchant" className="text-xs text-slate-400 mb-1.5 block">
+            Tên cửa hàng / đơn vị
+          </label>
           <input
+            id="field-merchant"
             {...register("merchant_name")}
             placeholder="VD: Chợ đầu mối, Siêu thị..."
             className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
@@ -132,8 +152,11 @@ export default function NewTransactionPage() {
 
         {/* Date */}
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Ngày *</label>
+          <label htmlFor="field-date" className="text-xs text-slate-400 mb-1.5 block">
+            Ngày *
+          </label>
           <input
+            id="field-date"
             {...register("transaction_date")}
             type="date"
             className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
@@ -142,8 +165,11 @@ export default function NewTransactionPage() {
 
         {/* Description */}
         <div>
-          <label className="text-xs text-slate-400 mb-1.5 block">Ghi chú</label>
+          <label htmlFor="field-description" className="text-xs text-slate-400 mb-1.5 block">
+            Ghi chú
+          </label>
           <textarea
+            id="field-description"
             {...register("description")}
             rows={2}
             placeholder="Ghi chú thêm..."
@@ -155,9 +181,9 @@ export default function NewTransactionPage() {
           type="submit"
           disabled={isSubmitting}
           id="btn-save-transaction"
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
           {isSubmitting ? "Đang lưu..." : "Lưu giao dịch"}
         </button>
       </form>
