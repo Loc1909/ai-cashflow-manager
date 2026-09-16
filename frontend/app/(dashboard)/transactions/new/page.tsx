@@ -54,7 +54,7 @@ export default function NewTransactionPage() {
   });
 
   const txType = watch("type");
-  const filteredCats = CATEGORIES.filter((c) => c.type === txType || c.value === "OTHER");
+  const filteredCats = CATEGORIES.filter((c) => c.type === txType);
 
   const onSubmit = async (data: FormOutput) => {
     await transactionApi.create(data);
