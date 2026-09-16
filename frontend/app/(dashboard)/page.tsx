@@ -14,7 +14,6 @@ import {
   Plus,
   ArrowRight,
   Wallet,
-  LogOut,
   Sparkles,
   AlertTriangle,
   AlertCircle,
@@ -30,33 +29,36 @@ import {
   Cell,
 } from "recharts";
 
+const INSIGHT_STYLES: Record<
+  string,
+  { bar: string; bg: string; icon: React.ElementType; iconColor: string }
+> = {
+  critical: { bar: "bg-expense", bg: "bg-expense-soft", icon: AlertCircle, iconColor: "text-expense" },
+  warning: { bar: "bg-warning", bg: "bg-warning-soft", icon: AlertTriangle, iconColor: "text-warning" },
+  good: { bar: "bg-income", bg: "bg-income-soft", icon: CheckCircle2, iconColor: "text-income" },
+  info: { bar: "bg-info", bg: "bg-info-soft", icon: Info, iconColor: "text-info" },
+};
+
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
   const { data: report } = useQuery<ReportResponse>({
-  queryKey: ["report", currentYear, currentMonth],
-  queryFn: () =>
-    reportApi.monthly(currentYear, currentMonth).then((r) => r.data),
-});
+    queryKey: ["report", currentYear, currentMonth],
+    queryFn: () => reportApi.monthly(currentYear, currentMonth).then((r) => r.data),
+  });
 
   const { data: recentTx } = useQuery({
     queryKey: ["transactions", "recent"],
-    queryFn: () =>
-      transactionApi
-        .list({ page: 1, page_size: 20 })
-        .then((r) => r.data),
+    queryFn: () => transactionApi.list({ page: 1, page_size: 20 }).then((r) => r.data),
   });
 
   const summary = report?.summary;
   const insights = report?.insights ?? [];
-  const netCashflow = summary
-    ? summary.total_income - summary.total_expense
-    : 0;
+  const netCashflow = summary ? summary.total_income - summary.total_expense : 0;
 
-  // Aggregate last 7 days from recent transactions
   const chartData = useMemo(() => {
     const daysMap = new Map<string, { name: string; thu: number; chi: number }>();
     for (let i = 6; i >= 0; i--) {
@@ -66,318 +68,243 @@ export default function DashboardPage() {
       const name = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
       daysMap.set(iso, { name, thu: 0, chi: 0 });
     }
-
     if (recentTx?.items) {
       for (const tx of recentTx.items) {
         const txDate = typeof tx.transaction_date === "string" ? tx.transaction_date.slice(0, 10) : "";
         const entry = daysMap.get(txDate);
         if (entry) {
-          if (tx.type === "income") {
-            entry.thu += tx.amount / 1000;
-          } else {
-            entry.chi += tx.amount / 1000;
-          }
+          if (tx.type === "income") entry.thu += tx.amount / 1000;
+          else entry.chi += tx.amount / 1000;
         }
       }
     }
-
     return Array.from(daysMap.values());
   }, [recentTx]);
 
   const hasChartActivity = chartData.some((d) => d.thu > 0 || d.chi > 0);
 
   return (
-    <div className="p-5 space-y-5 fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between pt-2">
-        <div>
-          <p className="text-zinc-400 text-xs">Xin chào,</p>
-          <h1 className="text-xl font-bold text-white text-balance">
-            {user?.business_name || user?.full_name || "Bạn"}
-          </h1>
-        </div>
-        <button
-          onClick={logout}
-          className="p-2 rounded-xl bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-white/10 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none shadow-sm"
-          title="Đăng xuất"
-          aria-label="Đăng xuất"
-          id="btn-logout"
-        >
-          <LogOut className="w-4 h-4" aria-hidden="true" />
-        </button>
+    <div className="px-5 lg:px-8 py-5 space-y-6 rise-in">
+      <div>
+        <p className="text-ink-faint text-xs">Xin chào,</p>
+        <h1 className="font-serif-display text-2xl text-ink text-balance">
+          {user?.business_name || user?.full_name || "Bạn"}
+        </h1>
       </div>
 
-      {/* Net Balance Card */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.24)] shadow-indigo-500/30 border border-indigo-400/20 group">
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent group-hover:opacity-30 transition-opacity duration-500" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <Wallet className="w-4 h-4 text-indigo-100" aria-hidden="true" />
-            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">
-              Tháng {currentMonth}/{currentYear}
+      {/* Hero ledger summary */}
+      <div className="relative ledger-sheet receipt-edge px-6 py-6 pb-8">
+        <div className="flex items-center gap-2 mb-1">
+          <Wallet className="w-4 h-4 text-brass" aria-hidden="true" />
+          <p className="text-ink-muted text-xs font-semibold uppercase tracking-wide">
+            Dòng tiền ròng · Tháng {currentMonth}/{currentYear}
+          </p>
+        </div>
+        <p
+          className={`font-serif-display text-4xl tabular tracking-tight ${
+            netCashflow >= 0 ? "text-income" : "text-expense"
+          }`}
+        >
+          {formatCurrency(netCashflow)}
+        </p>
+
+        <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-dashed border-rule">
+          <div>
+            <div className="flex items-center gap-1.5 text-ink-faint text-xs mb-1">
+              <TrendingUp className="w-3.5 h-3.5 text-income" aria-hidden="true" />
+              Tổng thu
+            </div>
+            <p className="text-income font-semibold tabular text-lg">
+              {formatCurrency(summary?.total_income ?? 0)}
             </p>
           </div>
-          <p className="text-4xl font-bold text-white tracking-tight tabular-nums">
-            {formatCurrency(netCashflow)}
-          </p>
-          <div className="flex gap-5 mt-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-emerald-400/20 flex items-center justify-center">
-                <TrendingUp className="w-3 h-3 text-emerald-300" aria-hidden="true" />
-              </div>
-              <span className="text-emerald-100 text-sm font-medium tabular-nums">
-                {formatCurrency(summary?.total_income ?? 0)}
-              </span>
+          <div>
+            <div className="flex items-center gap-1.5 text-ink-faint text-xs mb-1">
+              <TrendingDown className="w-3.5 h-3.5 text-expense" aria-hidden="true" />
+              Tổng chi
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-rose-400/20 flex items-center justify-center">
-                <TrendingDown className="w-3 h-3 text-rose-300" aria-hidden="true" />
-              </div>
-              <span className="text-rose-100 text-sm font-medium tabular-nums">
-                {formatCurrency(summary?.total_expense ?? 0)}
-              </span>
-            </div>
+            <p className="text-expense font-semibold tabular text-lg">
+              {formatCurrency(summary?.total_expense ?? 0)}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick actions */}
       <div className="grid grid-cols-2 gap-4">
         <Link
           href="/reports"
           id="btn-quick-reports"
-          className="glass rounded-2xl p-4 flex items-center gap-3 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-500/30 active:scale-95 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+          className="ledger-sheet p-4 flex items-center gap-3 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
         >
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-            <BarChart2 className="w-5 h-5 text-indigo-400" aria-hidden="true" />
+          <div className="w-10 h-10 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
+            <BarChart2 className="w-5 h-5 text-info" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="text-white text-sm font-semibold truncate">Xem báo cáo</p>
-            <p className="text-zinc-400 text-xs truncate">Phân tích AI</p>
+            <p className="text-ink text-sm font-semibold truncate">Xem báo cáo</p>
+            <p className="text-ink-faint text-xs truncate">Phân tích AI</p>
           </div>
         </Link>
         <Link
           href="/transactions/new"
           id="btn-quick-add"
-          className="glass rounded-2xl p-4 flex items-center gap-3 hover:-translate-y-1 hover:shadow-lg hover:border-emerald-500/30 active:scale-95 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+          className="ledger-sheet p-4 flex items-center gap-3 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
         >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-            <Plus className="w-5 h-5 text-emerald-400" aria-hidden="true" />
+          <div className="w-10 h-10 rounded-xl bg-income-soft flex items-center justify-center shrink-0">
+            <Plus className="w-5 h-5 text-income" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="text-white text-sm font-semibold truncate">Thêm giao dịch</p>
-            <p className="text-zinc-400 text-xs truncate">Nhập nhanh</p>
+            <p className="text-ink text-sm font-semibold truncate">Thêm giao dịch</p>
+            <p className="text-ink-faint text-xs truncate">Nhập nhanh</p>
           </div>
         </Link>
       </div>
 
-      {/* Mini Chart */}
-      {hasChartActivity && (
-        <div className="glass rounded-2xl p-5">
-          <p className="text-zinc-300 text-sm font-semibold mb-4">
-            7 ngày gần nhất <span className="text-zinc-500 font-normal text-xs">(nghìn đ)</span>
-          </p>
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={chartData} barSize={12} barGap={4}>
-              <XAxis
-                dataKey="name"
-                tick={{ fill: "#71717a", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                tickMargin={8}
-              />
-              <Tooltip
-                cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
-                contentStyle={{
-                  background: "rgba(24, 24, 27, 0.8)",
-                  backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  borderRadius: 12,
-                  fontSize: 12,
-                  color: "#fafafa"
-                }}
-                labelStyle={{ color: "#a1a1aa", marginBottom: 4 }}
-                itemStyle={{ padding: 0 }}
-              />
-              <Bar dataKey="thu" name="Thu" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry) => (
-                  <Cell key={`bar-thu-${entry.name}`} fill="#10b981" />
-                ))}
-              </Bar>
-              <Bar dataKey="chi" name="Chi" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry) => (
-                  <Cell key={`bar-chi-${entry.name}`} fill="#f43f5e" />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-      {/* AI Insights */}
-{insights.length > 0 && (
-  <div className="space-y-3">
-    <div className="flex items-center justify-between px-1">
-      <div className="flex items-center gap-2">
-        <Sparkles
-          className="w-4 h-4 text-indigo-400"
-          aria-hidden="true"
-        />
-
-        <h2 className="text-white text-sm font-semibold">
-          Phân tích AI
-        </h2>
-      </div>
-
-      <Link
-        href="/reports"
-        className="text-indigo-400 text-xs font-medium flex items-center gap-1 hover:text-indigo-300 transition-colors"
-      >
-        Xem chi tiết
-        <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-      </Link>
-    </div>
-
-    <div className="space-y-2.5">
-      {insights.slice(0, 3).map((item, idx) => {
-        const isCritical = item.level === "critical";
-        const isWarning = item.level === "warning";
-        const isGood = item.level === "good";
-
-        return (
-          <div
-            key={`dashboard-insight-${idx}`}
-            className={`rounded-2xl p-4 border ${
-              isCritical
-                ? "border-rose-500/20 bg-rose-950/20"
-                : isWarning
-                ? "border-amber-500/20 bg-amber-950/20"
-                : isGood
-                ? "border-emerald-500/20 bg-emerald-950/20"
-                : "border-indigo-500/20 bg-indigo-950/20"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  isCritical
-                    ? "bg-rose-500/20"
-                    : isWarning
-                    ? "bg-amber-500/20"
-                    : isGood
-                    ? "bg-emerald-500/20"
-                    : "bg-indigo-500/20"
-                }`}
-              >
-                {isCritical ? (
-                  <AlertCircle
-                    className="w-4 h-4 text-rose-400"
-                    aria-hidden="true"
+      <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start space-y-6 lg:space-y-0">
+        {/* Main column */}
+        <div className="lg:col-span-2 space-y-6">
+          {hasChartActivity && (
+            <div className="ledger-sheet p-5">
+              <p className="text-ink text-sm font-semibold mb-4">
+                7 ngày gần nhất <span className="text-ink-faint font-normal text-xs">(nghìn đ)</span>
+              </p>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={chartData} barSize={12} barGap={4}>
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: "#9aa392", fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={8}
                   />
-                ) : isWarning ? (
-                  <AlertTriangle
-                    className="w-4 h-4 text-amber-400"
-                    aria-hidden="true"
+                  <Tooltip
+                    cursor={{ fill: "rgba(34,48,31,0.05)" }}
+                    contentStyle={{
+                      background: "#fbf6ec",
+                      border: "1px solid #ddd0ac",
+                      borderRadius: 12,
+                      fontSize: 12,
+                      color: "#22301f",
+                    }}
+                    labelStyle={{ color: "#63705f", marginBottom: 4 }}
                   />
-                ) : isGood ? (
-                  <CheckCircle2
-                    className="w-4 h-4 text-emerald-400"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Info
-                    className="w-4 h-4 text-indigo-400"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-white text-sm font-semibold leading-tight">
-                  {item.title}
-                </p>
-
-                <p className="text-zinc-400 text-xs leading-relaxed mt-1.5">
-                  {item.message}
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
-      {/* Recent Transactions */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white text-sm font-semibold">Giao dịch gần đây</h2>
-          <Link
-            href="/transactions"
-            className="text-indigo-400 text-xs font-medium flex items-center gap-1 hover:text-indigo-300 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none rounded"
-          >
-            Xem tất cả <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-
-        <div className="space-y-2.5">
-          {recentTx?.items?.length === 0 && (
-            <div className="glass rounded-2xl p-8 text-center text-zinc-500 text-sm flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-zinc-600" />
-              </div>
-              <p>Chưa có giao dịch nào.</p>
-              <Link
-                href="/transactions/new"
-                className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors text-sm"
-              >
-                + Thêm giao dịch đầu tiên
-              </Link>
+                  <Bar dataKey="thu" name="Thu" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry) => (
+                      <Cell key={`bar-thu-${entry.name}`} fill="#2f6f4e" />
+                    ))}
+                  </Bar>
+                  <Bar dataKey="chi" name="Chi" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry) => (
+                      <Cell key={`bar-chi-${entry.name}`} fill="#a13d34" />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
-          {recentTx?.items?.map((tx: {
-            id: string;
-            type: string;
-            amount: number;
-            category: string;
-            description?: string;
-            merchant_name?: string;
-            transaction_date: string;
-          }) => (
-            <div
-              key={tx.id}
-              className="glass rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors duration-300"
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  tx.type === "income" ? "bg-emerald-500/10" : "bg-rose-500/10"
-                }`}
+
+          {/* Recent transactions */}
+          <div>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-ink text-sm font-semibold">Giao dịch gần đây</h2>
+              <Link
+                href="/transactions"
+                className="text-brass text-xs font-semibold flex items-center gap-1 hover:text-brass-dark transition-colors"
               >
-                {tx.type === "income" ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-rose-400" aria-hidden="true" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-zinc-100 text-sm font-medium truncate">
-                  {tx.merchant_name || tx.description || CATEGORY_LABELS[tx.category]}
-                </p>
-                <p className="text-zinc-500 text-xs mt-0.5 truncate">
-                  {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} ·{" "}
-                  {CATEGORY_LABELS[tx.category]}
-                </p>
-              </div>
-              <p
-                className={`text-sm font-semibold tabular-nums flex-shrink-0 ${
-                  tx.type === "income" ? "text-emerald-400" : "text-rose-400"
-                }`}
-              >
-                {tx.type === "income" ? "+" : "-"}
-                {formatCurrency(tx.amount)}
-              </p>
+                Xem tất cả <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </Link>
             </div>
-          ))}
+
+            <div className="ledger-sheet overflow-hidden">
+              {recentTx?.items?.length === 0 && (
+                <div className="p-8 text-center text-ink-faint text-sm flex flex-col items-center gap-3">
+                  <Wallet className="w-8 h-8 text-ink-faint" />
+                  <p>Chưa có giao dịch nào.</p>
+                  <Link href="/transactions/new" className="text-brass font-semibold hover:text-brass-dark transition-colors text-sm">
+                    + Thêm giao dịch đầu tiên
+                  </Link>
+                </div>
+              )}
+              {recentTx?.items?.slice(0, 8).map((tx: {
+                id: string;
+                type: string;
+                amount: number;
+                category: string;
+                description?: string;
+                merchant_name?: string;
+                transaction_date: string;
+              }) => (
+                <div key={tx.id} className="ledger-row px-4 py-3.5 flex items-center gap-3 hover:bg-paper-deep/40 transition-colors">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                      tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
+                    }`}
+                  >
+                    {tx.type === "income" ? (
+                      <TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4 text-expense" aria-hidden="true" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-ink text-sm font-medium truncate">
+                      {tx.merchant_name || tx.description || CATEGORY_LABELS[tx.category]}
+                    </p>
+                    <p className="text-ink-faint text-xs mt-0.5 truncate">
+                      {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} · {CATEGORY_LABELS[tx.category]}
+                    </p>
+                  </div>
+                  <p
+                    className={`text-sm font-semibold tabular shrink-0 ${
+                      tx.type === "income" ? "text-income" : "text-expense"
+                    }`}
+                  >
+                    {tx.type === "income" ? "+" : "-"}
+                    {formatCurrency(tx.amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+
+        {/* AI insights column */}
+        {insights.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-brass" aria-hidden="true" />
+                <h2 className="text-ink text-sm font-semibold">Phân tích AI</h2>
+              </div>
+              <Link
+                href="/reports"
+                className="lg:hidden text-brass text-xs font-semibold flex items-center gap-1 hover:text-brass-dark transition-colors"
+              >
+                Chi tiết <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </Link>
+            </div>
+
+            <div className="space-y-2.5">
+              {insights.slice(0, 3).map((item, idx) => {
+                const style = INSIGHT_STYLES[item.level] ?? INSIGHT_STYLES.info;
+                const Icon = style.icon;
+                return (
+                  <div key={`dashboard-insight-${idx}`} className={`ledger-sheet border-l-4 ${style.bar} p-4`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${style.bg}`}>
+                        <Icon className={`w-3.5 h-3.5 ${style.iconColor}`} aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-ink text-sm font-semibold leading-tight">{item.title}</p>
+                        <p className="text-ink-muted text-xs leading-relaxed mt-1.5">{item.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ về InsightEngine rule-based, không làm hỏng báo cáo.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from typing import Any
@@ -118,18 +119,35 @@ async def generate_insights(context: dict[str, Any]) -> list[dict[str, Any]]:
         },
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(
-                url,
-                params={"key": api_key},
-                json=payload,
-            )
-            response.raise_for_status()
-            body = response.json()
-            print("✅ Gemini: API trả response thành công")
-    except (httpx.HTTPError, ValueError) as exc:
-        print(f"❌ Gemini request failed: {exc}")
+    max_retries = 3
+    body = None
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = await client.post(
+                    url,
+                    params={"key": api_key},
+                    json=payload,
+                )
+                response.raise_for_status()
+                body = response.json()
+                print("✅ Gemini: API trả response thành công")
+                break
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                # Retry nếu là lỗi transient server (500, 502, 503, 504) hoặc Rate limit (429)
+                if status_code in (429, 500, 502, 503, 504) and attempt < max_retries:
+                    wait_time = attempt * 2
+                    print(f"⚠️ Gemini HTTP {status_code} ({exc.response.reason_phrase}). Đang thử lại lần {attempt}/{max_retries} sau {wait_time}s...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    print(f"❌ Gemini request failed: {exc}")
+                    return []
+            except (httpx.HTTPError, ValueError) as exc:
+                print(f"❌ Gemini request failed: {exc}")
+                return []
+
+    if not body:
         return []
 
     try:

@@ -1,22 +1,42 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   SỔ CÁI — design tokens
+   A small-business ledger, not a "fintech SaaS dashboard": warm paper,
+   printed-ink colors, ruled lines, stamp-style status marks.
+   ========================================================================= */
 @theme {
-  --color-primary: #6366f1;
-  --color-primary-dark: #4f46e5;
-  --color-surface: #18181b;
-  --color-surface-elevated: #27272a;
-  --color-income: #10b981; /* emerald-500 for a more premium green */
-  --color-expense: #f43f5e; /* rose-500 for a more premium red */
-}
+  --color-paper: #fbf6ec;           /* page background */
+  --color-paper-elevated: #f6efdf;  /* card surface */
+  --color-paper-deep: #efe4c9;      /* pressed / deep surface */
+  --color-rule: #ddd0ac;            /* hairline rules */
+  --color-rule-soft: #e9dfc4;
 
-:root {
-  --font-sans: "Inter", system-ui, sans-serif;
+  --color-ink: #22301f;             /* primary text — deep ledger green-black */
+  --color-ink-muted: #63705f;
+  --color-ink-faint: #9aa392;
+
+  --color-brass: #a9721f;           /* primary accent — brass stamp */
+  --color-brass-dark: #7f5416;
+  --color-brass-soft: #f0e0bd;
+
+  --color-income: #2f6f4e;          /* forest ink */
+  --color-income-soft: #e2eee3;
+  --color-expense: #a13d34;         /* sealing-wax red */
+  --color-expense-soft: #f3e1dc;
+  --color-info: #345170;            /* navy ink */
+  --color-info-soft: #e2e9ef;
+  --color-warning: #a9721f;
+  --color-warning-soft: #f0e0bd;
+
+  --font-serif: var(--font-lora), "Noto Serif", Georgia, serif;
+  --font-sans: var(--font-plex), "Be Vietnam Pro", system-ui, sans-serif;
+
+  --shadow-ledger: 0 1px 0 rgba(34, 48, 31, 0.04), 0 10px 24px -14px rgba(34, 48, 31, 0.35);
 }
 
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html {
@@ -25,83 +45,99 @@ html {
 }
 
 body {
-  background: #09090b; /* zinc-950 for deep premium background */
-  color: #fafafa; /* zinc-50 */
+  background: var(--color-paper);
+  background-image:
+    linear-gradient(var(--color-rule-soft) 1px, transparent 1px);
+  background-size: 100% 2.15rem;
+  background-position: 0 6.4rem;
+  color: var(--color-ink);
   font-family: var(--font-sans);
   min-height: 100dvh;
   overscroll-behavior-y: contain;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #3f3f46; /* zinc-700 */
-  border-radius: 2px;
+/* Kill the ruled background inside elevated surfaces so the paper-lines
+   effect only ever shows through empty page margins. */
+.ledger-sheet,
+.ledger-nav,
+input,
+select,
+textarea {
+  background-image: none;
 }
 
-/* Glass morphism card */
-.glass {
-  background: rgba(24, 24, 27, 0.65); /* zinc-900 with transparency */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-rule); border-radius: 3px; }
+
+/* ---- Surfaces --------------------------------------------------------- */
+.ledger-sheet {
+  background: var(--color-paper-elevated);
+  border: 1px solid var(--color-rule);
+  border-radius: 18px;
+  box-shadow: var(--shadow-ledger);
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.ledger-row {
+  border-bottom: 1px dashed var(--color-rule);
+}
+.ledger-row:last-child {
+  border-bottom: none;
 }
 
-/* Animated bottom nav indicator */
-.nav-active {
-  color: #818cf8; /* indigo-400 */
-  position: relative;
+/* A perforated "receipt" edge used on the hero summary card */
+.receipt-edge::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 12px;
+  background-image: radial-gradient(circle at 8px 0, var(--color-paper) 6px, transparent 6.5px);
+  background-size: 16px 12px;
+  background-repeat: repeat-x;
 }
 
-/* Smooth page entry */
-.fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ---- Type --------------------------------------------------------------*/
+.font-serif-display {
+  font-family: var(--font-serif);
+  font-feature-settings: "onum" 0, "lnum" 1;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ---- Motion (one deliberate reveal, nothing scattered) ----------------*/
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-/* View Transitions — page-level lateral fade */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 250ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+.rise-in {
+  animation: riseIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Reduce motion: disable all animations */
+@keyframes stampIn {
+  from { opacity: 0; transform: scale(0.9) rotate(-3deg); }
+  to   { opacity: 1; transform: scale(1) rotate(-2deg); }
+}
+.stamp-in {
+  animation: stampIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fade-in {
-    animation: none;
-  }
-
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-
-  * {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+  .rise-in, .stamp-in { animation: none; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 
-/* Mobile safe area */
+/* Safe area for iOS home indicator */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Focus ring consistent with the ink palette */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
 }

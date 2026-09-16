@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { transactionApi } from "@/lib/api-client";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
-import { Plus, TrendingUp, TrendingDown, Receipt } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
 
 type TxType = "all" | "income" | "expense";
 
@@ -32,23 +32,23 @@ export default function TransactionsPage() {
   ];
 
   return (
-    <div className="p-5 space-y-6 fade-in">
-      <div className="flex items-center justify-between pt-2">
-        <h1 className="text-2xl font-bold text-white text-balance">Giao dịch</h1>
+    <div className="px-5 lg:px-8 py-5 space-y-5 rise-in">
+      <div className="flex items-center justify-between">
+        <h1 className="font-serif-display text-2xl text-ink">Giao dịch</h1>
         <Link
           href="/transactions/new"
           id="btn-add-transaction"
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
+          className="flex items-center gap-1.5 bg-ink hover:bg-ink/90 text-paper text-sm font-semibold px-4 py-2.5 rounded-xl active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           Thêm mới
         </Link>
       </div>
 
-      {/* Segmented Control Type filter */}
-      <div 
-        className="flex gap-1 bg-zinc-900/80 p-1.5 rounded-xl border border-white/5 backdrop-blur-md" 
-        role="tablist" 
+      {/* Filter tabs */}
+      <div
+        className="inline-flex gap-1 bg-paper-elevated p-1.5 rounded-xl border border-rule"
+        role="tablist"
         aria-label="Bộ lọc giao dịch"
       >
         {tabs.map((tab) => {
@@ -63,10 +63,8 @@ export default function TransactionsPage() {
                 setTypeFilter(tab.key);
                 setPage(1);
               }}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none ${
-                isSelected
-                  ? "bg-zinc-800 text-white shadow-md border border-white/10"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 border border-transparent"
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                isSelected ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
               }`}
             >
               {tab.label}
@@ -75,26 +73,24 @@ export default function TransactionsPage() {
         })}
       </div>
 
-      {/* List */}
-      <div className="space-y-3">
+      {/* Register */}
+      <div className="ledger-sheet overflow-hidden">
         {isLoading && (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="glass rounded-2xl h-16 animate-pulse bg-zinc-800/50" />
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 rounded-xl animate-pulse bg-paper-deep/60" />
             ))}
           </div>
         )}
 
         {!isLoading && data?.items?.length === 0 && (
-          <div className="glass rounded-3xl p-10 text-center flex flex-col items-center justify-center gap-3 border-dashed border-2 border-zinc-800">
-            <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center">
-              <Receipt className="w-6 h-6 text-zinc-500" />
-            </div>
-            <p className="text-zinc-400 text-sm">Không tìm thấy giao dịch nào</p>
+          <div className="p-10 text-center flex flex-col items-center justify-center gap-3">
+            <Receipt className="w-8 h-8 text-ink-faint" />
+            <p className="text-ink-muted text-sm">Không tìm thấy giao dịch nào</p>
             <Link
               href="/transactions/new"
               id="btn-empty-add-tx"
-              className="inline-block mt-2 px-4 py-2 bg-indigo-500/10 text-indigo-400 text-sm font-medium hover:bg-indigo-500/20 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none rounded-xl"
+              className="inline-block mt-1 px-4 py-2 bg-brass-soft text-brass-dark text-sm font-semibold hover:bg-brass/20 active:scale-95 transition-all rounded-xl"
             >
               Thêm giao dịch ngay
             </Link>
@@ -112,33 +108,30 @@ export default function TransactionsPage() {
         }) => (
           <div
             key={tx.id}
-            className="glass rounded-2xl px-5 py-4 flex items-center gap-4 hover:bg-zinc-800/40 hover:border-zinc-700 transition-all duration-300 group"
+            className="ledger-row px-5 py-4 flex items-center gap-4 hover:bg-paper-deep/40 transition-colors"
           >
             <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                tx.type === "income" 
-                  ? "bg-emerald-500/10 group-hover:bg-emerald-500/20" 
-                  : "bg-rose-500/10 group-hover:bg-rose-500/20"
+              className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
+                tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
               }`}
             >
               {tx.type === "income" ? (
-                <TrendingUp className="w-5 h-5 text-emerald-400" aria-hidden="true" />
+                <TrendingUp className="w-5 h-5 text-income" aria-hidden="true" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-rose-400" aria-hidden="true" />
+                <TrendingDown className="w-5 h-5 text-expense" aria-hidden="true" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-zinc-100 text-[15px] font-medium truncate">
+              <p className="text-ink text-[15px] font-medium truncate">
                 {tx.merchant_name || tx.description || CATEGORY_LABELS[tx.category]}
               </p>
-              <p className="text-zinc-500 text-xs mt-1 truncate">
-                {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} ·{" "}
-                {CATEGORY_LABELS[tx.category]}
+              <p className="text-ink-faint text-xs mt-1 truncate">
+                {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} · {CATEGORY_LABELS[tx.category]}
               </p>
             </div>
             <p
-              className={`text-[15px] font-semibold tabular-nums flex-shrink-0 ${
-                tx.type === "income" ? "text-emerald-400" : "text-rose-400"
+              className={`text-[15px] font-semibold tabular shrink-0 ${
+                tx.type === "income" ? "text-income" : "text-expense"
               }`}
             >
               {tx.type === "income" ? "+" : "-"}
@@ -150,27 +143,27 @@ export default function TransactionsPage() {
 
       {/* Pagination */}
       {data && data.total > 20 && (
-        <div className="flex justify-center gap-3 pt-4">
+        <div className="flex justify-center items-center gap-3 pt-2">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             aria-label="Trang trước"
-            className="px-5 py-2.5 glass rounded-xl text-sm font-medium text-zinc-300 disabled:opacity-30 hover:bg-zinc-800/50 hover:text-white active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+            className="p-2.5 ledger-sheet text-ink-muted disabled:opacity-30 hover:text-ink active:scale-95 transition-all"
           >
-            Trước
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <div className="px-4 py-2.5 glass rounded-xl flex items-center justify-center min-w-[3rem]" aria-live="polite">
-            <span className="text-zinc-300 text-sm font-medium tabular-nums">
-              {page} <span className="text-zinc-500 mx-1">/</span> {Math.ceil(data.total / 20)}
-            </span>
+          <div className="px-4 py-2 text-sm" aria-live="polite">
+            <span className="text-ink font-semibold tabular">{page}</span>
+            <span className="text-ink-faint mx-1">/</span>
+            <span className="text-ink-faint">{Math.ceil(data.total / 20)}</span>
           </div>
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={page >= Math.ceil(data.total / 20)}
             aria-label="Trang sau"
-            className="px-5 py-2.5 glass rounded-xl text-sm font-medium text-zinc-300 disabled:opacity-30 hover:bg-zinc-800/50 hover:text-white active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+            className="p-2.5 ledger-sheet text-ink-muted disabled:opacity-30 hover:text-ink active:scale-95 transition-all"
           >
-            Sau
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}

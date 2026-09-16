@@ -1,30 +1,41 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Lora, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/hooks/use-auth";
 import ReactQueryProvider from "@/lib/providers/react-query-provider";
 
-const inter = Inter({ subsets: ["latin", "vietnamese"] });
+const lora = Lora({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-lora",
+  display: "swap",
+});
+
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "AI Quản Lý Thu Chi — Thông Minh Hơn Mỗi Ngày",
+  title: "Sổ Cái AI — Quản Lý Thu Chi Thông Minh",
   description:
     "Quản lý thu chi cho hộ kinh doanh nhỏ: nhập giao dịch nhanh, AI phân tích dòng tiền, báo cáo tức thì.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Thu Chi AI",
+    title: "Sổ Cái AI",
   },
   openGraph: {
-    title: "AI Quản Lý Thu Chi",
+    title: "Sổ Cái AI — Quản Lý Thu Chi",
     description: "Ứng dụng quản lý thu chi thông minh cho hộ kinh doanh",
     type: "website",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#6366f1",
+  themeColor: "#fbf6ec",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -36,12 +47,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className="dark">
+    <html lang="vi" className={`${lora.variable} ${plexSans.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <ReactQueryProvider>
           <AuthProvider>{children}</AuthProvider>
         </ReactQueryProvider>

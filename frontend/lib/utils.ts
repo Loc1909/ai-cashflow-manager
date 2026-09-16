@@ -35,16 +35,18 @@ export const CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Khác",
 };
 
+// Ink swatches consistent with the ledger palette — desaturated,
+// printed-ink feel rather than neon SaaS chart colors.
 export const CATEGORY_COLORS: Record<string, string> = {
-  SALES: "#22c55e",
-  SERVICE: "#10b981",
-  OTHER_INCOME: "#6ee7b7",
-  FOOD: "#f59e0b",
-  SUPPLIES: "#ef4444",
-  SALARY: "#8b5cf6",
-  UTILITIES: "#3b82f6",
-  RENT: "#ec4899",
-  TRANSPORT: "#14b8a6",
-  MARKETING: "#f97316",
-  OTHER: "#6b7280",
+  SALES: "#2f6f4e",
+  SERVICE: "#4d8f6a",
+  OTHER_INCOME: "#8bab74",
+  FOOD: "#a13d34",
+  SUPPLIES: "#c0703f",
+  SALARY: "#a9721f",
+  UTILITIES: "#345170",
+  RENT: "#6a4a7c",
+  TRANSPORT: "#3d7a7a",
+  MARKETING: "#b0555c",
+  OTHER: "#63705f",
 };
