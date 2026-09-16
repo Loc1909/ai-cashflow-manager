@@ -42,18 +42,36 @@ const INSIGHT_STYLES: Record<
   info: { bar: "bg-info", bg: "bg-info-soft", icon: Info, iconColor: "text-info" },
 };
 
+/** Reusable animated skeleton block */
+function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded-lg bg-ink/8 ${className}`}
+      aria-hidden="true"
+    />
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const { data: report, isError: isReportError } = useQuery<ReportResponse>({
+  const {
+    data: report,
+    isLoading: isReportLoading,
+    isError: isReportError,
+  } = useQuery<ReportResponse>({
     queryKey: ["report", currentYear, currentMonth],
     queryFn: () => reportApi.monthly(currentYear, currentMonth).then((r) => r.data),
   });
 
-  const { data: recentTx, isError: isRecentTxError } = useQuery<TransactionListResponse>({
+  const {
+    data: recentTx,
+    isLoading: isRecentTxLoading,
+    isError: isRecentTxError,
+  } = useQuery<TransactionListResponse>({
     queryKey: ["transactions", "recent"],
     queryFn: () => transactionApi.list({ page: 1, page_size: 20 }).then((r) => r.data),
   });
@@ -107,34 +125,53 @@ export default function DashboardPage() {
             Dòng tiền ròng · Tháng {currentMonth}/{currentYear}
           </p>
         </div>
-        <p
-          className={`font-serif-display text-4xl tabular tracking-tight ${
-            netCashflow >= 0 ? "text-income" : "text-expense"
-          }`}
-        >
-          {formatCurrency(netCashflow)}
-        </p>
 
-        <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-dashed border-rule">
-          <div>
-            <div className="flex items-center gap-1.5 text-ink-faint text-xs mb-1">
-              <TrendingUp className="w-3.5 h-3.5 text-income" aria-hidden="true" />
-              Tổng thu
+        {isReportLoading ? (
+          <>
+            <Skeleton className="h-10 w-48 mt-1" />
+            <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-dashed border-rule">
+              <div>
+                <Skeleton className="h-3 w-16 mb-2" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <div>
+                <Skeleton className="h-3 w-16 mb-2" />
+                <Skeleton className="h-6 w-32" />
+              </div>
             </div>
-            <p className="text-income font-semibold tabular text-lg">
-              {formatCurrency(summary?.total_income ?? 0)}
+          </>
+        ) : (
+          <>
+            <p
+              className={`font-serif-display text-4xl tabular tracking-tight ${
+                netCashflow >= 0 ? "text-income" : "text-expense"
+              }`}
+            >
+              {formatCurrency(netCashflow)}
             </p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-ink-faint text-xs mb-1">
-              <TrendingDown className="w-3.5 h-3.5 text-expense" aria-hidden="true" />
-              Tổng chi
+
+            <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-dashed border-rule">
+              <div>
+                <div className="flex items-center gap-1.5 text-ink-faint text-xs mb-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-income" aria-hidden="true" />
+                  Tổng thu
+                </div>
+                <p className="text-income font-semibold tabular text-lg">
+                  {formatCurrency(summary?.total_income ?? 0)}
+                </p>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 text-ink-faint text-xs mb-1">
+                  <TrendingDown className="w-3.5 h-3.5 text-expense" aria-hidden="true" />
+                  Tổng chi
+                </div>
+                <p className="text-expense font-semibold tabular text-lg">
+                  {formatCurrency(summary?.total_expense ?? 0)}
+                </p>
+              </div>
             </div>
-            <p className="text-expense font-semibold tabular text-lg">
-              {formatCurrency(summary?.total_expense ?? 0)}
-            </p>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Quick actions */}
@@ -217,52 +254,85 @@ export default function DashboardPage() {
             </div>
 
             <div className="ledger-sheet overflow-hidden">
-              {recentTx?.items?.length === 0 && (
-                <div className="p-8 text-center text-ink-faint text-sm flex flex-col items-center gap-3">
-                  <Wallet className="w-8 h-8 text-ink-faint" />
-                  <p>Chưa có giao dịch nào.</p>
-                  <Link href="/transactions/new" className="text-brass font-semibold hover:text-brass-dark transition-colors text-sm">
-                    + Thêm giao dịch đầu tiên
-                  </Link>
+              {isRecentTxLoading ? (
+                <div className="p-4 space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3.5 w-40" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                      <Skeleton className="h-4 w-20 shrink-0" />
+                    </div>
+                  ))}
                 </div>
+              ) : (
+                <>
+                  {recentTx?.items?.length === 0 && (
+                    <div className="p-8 text-center text-ink-faint text-sm flex flex-col items-center gap-3">
+                      <Wallet className="w-8 h-8 text-ink-faint" />
+                      <p>Chưa có giao dịch nào.</p>
+                      <Link href="/transactions/new" className="text-brass font-semibold hover:text-brass-dark transition-colors text-sm">
+                        + Thêm giao dịch đầu tiên
+                      </Link>
+                    </div>
+                  )}
+                  {recentTx?.items?.slice(0, 8).map((tx: Transaction) => (
+                    <div key={tx.id} className="ledger-row px-4 py-3.5 flex items-center gap-3 hover:bg-paper-deep/40 transition-colors">
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                          tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
+                        }`}
+                      >
+                        {tx.type === "income" ? (
+                          <TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 text-expense" aria-hidden="true" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-ink text-sm font-medium truncate">
+                          {tx.merchant_name || tx.description || CATEGORY_LABELS[tx.category]}
+                        </p>
+                        <p className="text-ink-faint text-xs mt-0.5 truncate">
+                          {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} · {CATEGORY_LABELS[tx.category]}
+                        </p>
+                      </div>
+                      <p
+                        className={`text-sm font-semibold tabular shrink-0 ${
+                          tx.type === "income" ? "text-income" : "text-expense"
+                        }`}
+                      >
+                        {tx.type === "income" ? "+" : "-"}
+                        {formatCurrency(tx.amount)}
+                      </p>
+                    </div>
+                  ))}
+                </>
               )}
-              {recentTx?.items?.slice(0, 8).map((tx: Transaction) => (
-                <div key={tx.id} className="ledger-row px-4 py-3.5 flex items-center gap-3 hover:bg-paper-deep/40 transition-colors">
-                  <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                      tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
-                    }`}
-                  >
-                    {tx.type === "income" ? (
-                      <TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-expense" aria-hidden="true" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-ink text-sm font-medium truncate">
-                      {tx.merchant_name || tx.description || CATEGORY_LABELS[tx.category]}
-                    </p>
-                    <p className="text-ink-faint text-xs mt-0.5 truncate">
-                      {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} · {CATEGORY_LABELS[tx.category]}
-                    </p>
-                  </div>
-                  <p
-                    className={`text-sm font-semibold tabular shrink-0 ${
-                      tx.type === "income" ? "text-income" : "text-expense"
-                    }`}
-                  >
-                    {tx.type === "income" ? "+" : "-"}
-                    {formatCurrency(tx.amount)}
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
         </div>
 
         {/* AI insights column */}
-        {insights.length > 0 && (
+        {isReportLoading ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 px-1 mb-1">
+              <Sparkles className="w-4 h-4 text-brass" aria-hidden="true" />
+              <span className="text-ink text-sm font-semibold">Phân tích AI</span>
+            </div>
+            <div className="space-y-2.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="ledger-sheet p-4 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : insights.length > 0 ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
@@ -297,7 +367,7 @@ export default function DashboardPage() {
               })}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
