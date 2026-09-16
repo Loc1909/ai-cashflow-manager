@@ -7,20 +7,7 @@ import { z } from "zod";
 import { transactionApi } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Loader2 } from "lucide-react";
-
-const CATEGORIES = [
-  { value: "SALES", label: "Doanh thu bán hàng", type: "income" },
-  { value: "SERVICE", label: "Doanh thu dịch vụ", type: "income" },
-  { value: "OTHER_INCOME", label: "Thu nhập khác", type: "income" },
-  { value: "FOOD", label: "Thực phẩm / Nguyên liệu", type: "expense" },
-  { value: "SUPPLIES", label: "Vật tư / Dụng cụ", type: "expense" },
-  { value: "SALARY", label: "Lương nhân viên", type: "expense" },
-  { value: "UTILITIES", label: "Điện / Nước / Internet", type: "expense" },
-  { value: "RENT", label: "Thuê mặt bằng", type: "expense" },
-  { value: "TRANSPORT", label: "Vận chuyển / Xăng xe", type: "expense" },
-  { value: "MARKETING", label: "Quảng cáo / Marketing", type: "expense" },
-  { value: "OTHER", label: "Khác", type: "expense" },
-];
+import { CATEGORIES } from "@/lib/constants";
 
 const schema = z.object({
   type: z.enum(["income", "expense"]),

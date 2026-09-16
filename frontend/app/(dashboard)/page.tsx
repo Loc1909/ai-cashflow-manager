@@ -10,6 +10,8 @@ import type { Transaction, TransactionListResponse } from "@/lib/types/transacti
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
 import { CHART_THEME, chartTooltipStyle } from "@/lib/chart-theme";
 import { ErrorBanner } from "@/components/ui/error-banner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { InsightCard } from "@/components/ui/insight-card";
 import {
   TrendingUp,
   TrendingDown,
@@ -18,10 +20,6 @@ import {
   ArrowRight,
   Wallet,
   Sparkles,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle2,
-  Info,
 } from "lucide-react";
 import {
   BarChart,
@@ -31,26 +29,6 @@ import {
   Tooltip,
   Cell,
 } from "recharts";
-
-const INSIGHT_STYLES: Record<
-  string,
-  { bar: string; bg: string; icon: React.ElementType; iconColor: string }
-> = {
-  critical: { bar: "bg-expense", bg: "bg-expense-soft", icon: AlertCircle, iconColor: "text-expense" },
-  warning: { bar: "bg-warning", bg: "bg-warning-soft", icon: AlertTriangle, iconColor: "text-warning" },
-  good: { bar: "bg-income", bg: "bg-income-soft", icon: CheckCircle2, iconColor: "text-income" },
-  info: { bar: "bg-info", bg: "bg-info-soft", icon: Info, iconColor: "text-info" },
-};
-
-/** Reusable animated skeleton block */
-function Skeleton({ className = "" }: { className?: string }) {
-  return (
-    <div
-      className={`animate-pulse rounded-lg bg-ink/8 ${className}`}
-      aria-hidden="true"
-    />
-  );
-}
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -345,23 +323,9 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-2.5">
-              {insights.slice(0, 3).map((item, idx) => {
-                const style = INSIGHT_STYLES[item.level] ?? INSIGHT_STYLES.info;
-                const Icon = style.icon;
-                return (
-                  <div key={`dashboard-insight-${idx}`} className={`ledger-sheet border-l-4 ${style.bar} p-4`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${style.bg}`}>
-                        <Icon className={`w-3.5 h-3.5 ${style.iconColor}`} aria-hidden="true" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-ink text-sm font-semibold leading-tight">{item.title}</p>
-                        <p className="text-ink-muted text-xs leading-relaxed mt-1.5">{item.message}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {insights.slice(0, 3).map((item, idx) => (
+                <InsightCard key={`dashboard-insight-${idx}`} item={item} showActionBadge={false} />
+              ))}
             </div>
           </div>
         ) : null}

@@ -6,19 +6,19 @@ import { reportApi } from "@/lib/api-client";
 import type { ReportResponse, InsightItem, AnomalyItem } from "@/lib/types/report";
 import { formatCurrency, CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/utils";
 import { CHART_THEME, chartTooltipStyle } from "@/lib/chart-theme";
+import { TREND_LABELS } from "@/lib/constants";
 import { ErrorBanner } from "@/components/ui/error-banner";
+import { InsightCard } from "@/components/ui/insight-card";
 import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle,
   AlertCircle,
-  CheckCircle2,
-  Info,
   TrendingUp,
   TrendingDown,
   Clock,
   ChartPie,
+  Info,
 } from "lucide-react";
 import {
   PieChart,
@@ -32,23 +32,6 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-
-const TREND_LABELS: Record<string, { label: string; color: string }> = {
-  tang: { label: "Đang tăng", color: "text-income" },
-  giam: { label: "Đang giảm", color: "text-expense" },
-  on_dinh: { label: "Ổn định", color: "text-info" },
-  khong_du_du_lieu: { label: "Chưa đủ dữ liệu", color: "text-ink-faint" },
-};
-
-const INSIGHT_STYLES: Record<
-  string,
-  { bar: string; bg: string; icon: React.ElementType; iconColor: string }
-> = {
-  critical: { bar: "bg-expense", bg: "bg-expense-soft", icon: AlertCircle, iconColor: "text-expense" },
-  warning: { bar: "bg-warning", bg: "bg-warning-soft", icon: AlertTriangle, iconColor: "text-warning" },
-  good: { bar: "bg-income", bg: "bg-income-soft", icon: CheckCircle2, iconColor: "text-income" },
-  info: { bar: "bg-info", bg: "bg-info-soft", icon: Info, iconColor: "text-info" },
-};
 
 export default function ReportsPage() {
   const now = useMemo(() => new Date(), []);
@@ -340,30 +323,9 @@ export default function ReportsPage() {
                     <h2 className="text-ink text-sm font-semibold">Phân tích AI</h2>
                   </div>
                   <div className="space-y-3">
-                    {insights.map((item: InsightItem, idx: number) => {
-                      const style = INSIGHT_STYLES[item.level] ?? INSIGHT_STYLES.info;
-                      const Icon = style.icon;
-                      return (
-                        <div key={`insight-${idx}`} className={`ledger-sheet border-l-4 ${style.bar} p-4`}>
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${style.bg}`}>
-                              <Icon className={`w-3.5 h-3.5 ${style.iconColor}`} aria-hidden="true" />
-                            </div>
-                            <div className="space-y-1.5 min-w-0 flex-1">
-                              <p className="text-ink text-[14px] font-semibold leading-tight text-balance">{item.title}</p>
-                              <p className="text-ink-muted text-xs leading-relaxed">{item.message}</p>
-                              {item.action && (
-                                <div className="pt-2">
-                                  <span className="inline-block text-[11px] font-semibold text-brass-dark bg-brass-soft px-2.5 py-1 rounded-lg">
-                                    {item.action}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {insights.map((item: InsightItem, idx: number) => (
+                      <InsightCard key={`insight-${idx}`} item={item} />
+                    ))}
                   </div>
                 </div>
               )}
