@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { authApi } from "@/lib/api-client";
+import { AUTH_TOKEN_KEY } from "@/lib/constants";
 
 interface User {
   id: string;
@@ -26,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) {
       setIsLoading(false);
       return;
@@ -34,19 +35,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authApi
       .getMe()
       .then((res) => setUser(res.data))
-      .catch(() => localStorage.removeItem("access_token"))
+      .catch(() => localStorage.removeItem(AUTH_TOKEN_KEY))
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
-    localStorage.setItem("access_token", res.data.access_token);
+    localStorage.setItem(AUTH_TOKEN_KEY, res.data.access_token);
     const meRes = await authApi.getMe();
     setUser(meRes.data);
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token");
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     setUser(null);
     window.location.href = "/login";
   };

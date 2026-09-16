@@ -69,7 +69,7 @@ export default function DashboardLayout({
       >
         <div className="flex items-center gap-2 px-2 mb-10">
           <BookOpen className="w-5 h-5 text-brass" aria-hidden="true" />
-          <span className="font-serif-display text-lg text-ink">Sổ Cái AI</span>
+          <span className="font-serif-display text-lg text-ink">Cashflow Pro</span>
         </div>
 
         <nav className="flex-1 space-y-1">

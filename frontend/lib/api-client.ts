@@ -3,6 +3,9 @@ import type {
   ReportResponse,
   MonthlySummary,
 } from "@/lib/types/report";
+import type { TransactionListResponse } from "@/lib/types/transaction";
+import { AUTH_TOKEN_KEY } from "@/lib/constants";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export const api = axios.create({
@@ -13,7 +16,7 @@ export const api = axios.create({
 // Attach JWT token from localStorage to every request
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +29,7 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
+      localStorage.removeItem(AUTH_TOKEN_KEY);
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -53,7 +56,7 @@ export const transactionApi = {
     date_to?: string;
     page?: number;
     page_size?: number;
-  }) => api.get("/transactions/", { params }),
+  }) => api.get<TransactionListResponse>("/transactions/", { params }),
   create: (data: object) => api.post("/transactions/", data),
   update: (id: string, data: object) => api.patch(`/transactions/${id}`, data),
   delete: (id: string) => api.delete(`/transactions/${id}`),

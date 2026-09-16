@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { transactionApi } from "@/lib/api-client";
+import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
+import { ErrorBanner } from "@/components/ui/error-banner";
 import { Plus, TrendingUp, TrendingDown, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
 
 type TxType = "all" | "income" | "expense";
@@ -13,7 +15,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TxType>("all");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery<TransactionListResponse>({
     queryKey: ["transactions", typeFilter, page],
     queryFn: () =>
       transactionApi
@@ -44,6 +46,10 @@ export default function TransactionsPage() {
           Thêm mới
         </Link>
       </div>
+
+      {isError && (
+        <ErrorBanner message="Không tải được danh sách giao dịch. Vui lòng thử lại." />
+      )}
 
       {/* Filter tabs */}
       <div
@@ -97,15 +103,7 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {data?.items?.map((tx: {
-          id: string;
-          type: string;
-          amount: number;
-          category: string;
-          description?: string;
-          merchant_name?: string;
-          transaction_date: string;
-        }) => (
+        {data?.items?.map((tx: Transaction) => (
           <div
             key={tx.id}
             className="ledger-row px-5 py-4 flex items-center gap-4 hover:bg-paper-deep/40 transition-colors"

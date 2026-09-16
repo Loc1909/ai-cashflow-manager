@@ -6,7 +6,10 @@ import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { reportApi, transactionApi } from "@/lib/api-client";
 import type { ReportResponse } from "@/lib/types/report";
+import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
+import { CHART_THEME, chartTooltipStyle } from "@/lib/chart-theme";
+import { ErrorBanner } from "@/components/ui/error-banner";
 import {
   TrendingUp,
   TrendingDown,
@@ -45,12 +48,12 @@ export default function DashboardPage() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const { data: report } = useQuery<ReportResponse>({
+  const { data: report, isError: isReportError } = useQuery<ReportResponse>({
     queryKey: ["report", currentYear, currentMonth],
     queryFn: () => reportApi.monthly(currentYear, currentMonth).then((r) => r.data),
   });
 
-  const { data: recentTx } = useQuery({
+  const { data: recentTx, isError: isRecentTxError } = useQuery<TransactionListResponse>({
     queryKey: ["transactions", "recent"],
     queryFn: () => transactionApi.list({ page: 1, page_size: 20 }).then((r) => r.data),
   });
@@ -91,6 +94,10 @@ export default function DashboardPage() {
           {user?.business_name || user?.full_name || "Bạn"}
         </h1>
       </div>
+
+      {(isReportError || isRecentTxError) && (
+        <ErrorBanner message="Không tải được dữ liệu mới nhất. Vui lòng thử tải lại trang." />
+      )}
 
       {/* Hero ledger summary */}
       <div className="relative ledger-sheet receipt-edge px-6 py-6 pb-8">
@@ -172,30 +179,24 @@ export default function DashboardPage() {
                 <BarChart data={chartData} barSize={12} barGap={4}>
                   <XAxis
                     dataKey="name"
-                    tick={{ fill: "#9aa392", fontSize: 10 }}
+                    tick={{ fill: CHART_THEME.inkFaint, fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
                     tickMargin={8}
                   />
                   <Tooltip
                     cursor={{ fill: "rgba(34,48,31,0.05)" }}
-                    contentStyle={{
-                      background: "#fbf6ec",
-                      border: "1px solid #ddd0ac",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      color: "#22301f",
-                    }}
-                    labelStyle={{ color: "#63705f", marginBottom: 4 }}
+                    contentStyle={chartTooltipStyle}
+                    labelStyle={{ color: CHART_THEME.inkMuted, marginBottom: 4 }}
                   />
                   <Bar dataKey="thu" name="Thu" radius={[4, 4, 0, 0]}>
                     {chartData.map((entry) => (
-                      <Cell key={`bar-thu-${entry.name}`} fill="#2f6f4e" />
+                      <Cell key={`bar-thu-${entry.name}`} fill={CHART_THEME.income} />
                     ))}
                   </Bar>
                   <Bar dataKey="chi" name="Chi" radius={[4, 4, 0, 0]}>
                     {chartData.map((entry) => (
-                      <Cell key={`bar-chi-${entry.name}`} fill="#a13d34" />
+                      <Cell key={`bar-chi-${entry.name}`} fill={CHART_THEME.expense} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -225,15 +226,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               )}
-              {recentTx?.items?.slice(0, 8).map((tx: {
-                id: string;
-                type: string;
-                amount: number;
-                category: string;
-                description?: string;
-                merchant_name?: string;
-                transaction_date: string;
-              }) => (
+              {recentTx?.items?.slice(0, 8).map((tx: Transaction) => (
                 <div key={tx.id} className="ledger-row px-4 py-3.5 flex items-center gap-3 hover:bg-paper-deep/40 transition-colors">
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${

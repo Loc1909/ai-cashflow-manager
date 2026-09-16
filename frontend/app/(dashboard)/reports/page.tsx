@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { reportApi } from "@/lib/api-client";
 import type { ReportResponse, InsightItem, AnomalyItem } from "@/lib/types/report";
 import { formatCurrency, CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/utils";
+import { CHART_THEME, chartTooltipStyle } from "@/lib/chart-theme";
+import { ErrorBanner } from "@/components/ui/error-banner";
 import {
   Sparkles,
   ChevronLeft,
@@ -53,7 +55,7 @@ export default function ReportsPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
-  const { data: report, isLoading } = useQuery<ReportResponse>({
+  const { data: report, isLoading, isError } = useQuery<ReportResponse>({
     queryKey: ["report-full", year, month],
     queryFn: () => reportApi.monthly(year, month).then((r) => r.data),
   });
@@ -130,6 +132,10 @@ export default function ReportsPage() {
           </button>
         </div>
       </div>
+
+      {isError && (
+        <ErrorBanner message="Không tải được báo cáo tháng này. Vui lòng thử lại." />
+      )}
 
       {isLoading && (
         <div className="space-y-4">
@@ -252,32 +258,27 @@ export default function ReportsPage() {
                   <div className="mt-6 h-[260px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={forecastChartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#ddd0ac" />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.rule} />
                         <XAxis
                           dataKey="day"
-                          tick={{ fill: "#9aa392", fontSize: 11 }}
+                          tick={{ fill: CHART_THEME.inkFaint, fontSize: 11 }}
                           tickLine={false}
                           axisLine={false}
                           tickFormatter={(v) => `N${v}`}
                           interval={4}
                         />
                         <YAxis
-                          tick={{ fill: "#9aa392", fontSize: 11 }}
+                          tick={{ fill: CHART_THEME.inkFaint, fontSize: 11 }}
                           tickLine={false}
                           axisLine={false}
                           tickFormatter={(value) => `${Math.round(value / 1000000)}tr`}
                         />
                         <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#fbf6ec",
-                            border: "1px solid #ddd0ac",
-                            borderRadius: "12px",
-                            color: "#22301f",
-                          }}
+                          contentStyle={chartTooltipStyle}
                           labelFormatter={(v) => `Ngày ${v}`}
                           formatter={(value) => [formatCurrency(Number(value)), "Dự báo"]}
                         />
-                        <Line type="monotone" dataKey="value" stroke="#345170" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                        <Line type="monotone" dataKey="value" stroke={CHART_THEME.info} strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -375,14 +376,8 @@ export default function ReportsPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(val: any) => formatCurrency(Number(val) || 0)}
-                        contentStyle={{
-                          background: "#fbf6ec",
-                          border: "1px solid #ddd0ac",
-                          borderRadius: 12,
-                          fontSize: 12,
-                          color: "#22301f",
-                        }}
+                        formatter={(val) => formatCurrency(Number(val) || 0)}
+                        contentStyle={chartTooltipStyle}
                       />
                     </PieChart>
                   </ResponsiveContainer>

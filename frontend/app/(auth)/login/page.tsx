@@ -52,7 +52,7 @@ export default function LoginPage() {
         />
         <div className="relative flex items-center gap-2.5">
           <BookOpen className="w-6 h-6 text-brass-soft" aria-hidden="true" />
-          <span className="font-serif-display text-lg tracking-tight">Sổ Cái AI</span>
+          <span className="font-serif-display text-lg tracking-tight">Cashflow Pro</span>
         </div>
 
         <div className="relative max-w-md">

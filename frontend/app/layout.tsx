@@ -18,17 +18,17 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sổ Cái AI — Quản Lý Thu Chi Thông Minh",
+  title: "Cashflow Pro — Quản Lý Thu Chi Thông Minh",
   description:
     "Quản lý thu chi cho hộ kinh doanh nhỏ: nhập giao dịch nhanh, AI phân tích dòng tiền, báo cáo tức thì.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Sổ Cái AI",
+    title: "Cashflow Pro",
   },
   openGraph: {
-    title: "Sổ Cái AI — Quản Lý Thu Chi",
+    title: "Cashflow Pro — Quản Lý Thu Chi",
     description: "Ứng dụng quản lý thu chi thông minh cho hộ kinh doanh",
     type: "website",
   },
