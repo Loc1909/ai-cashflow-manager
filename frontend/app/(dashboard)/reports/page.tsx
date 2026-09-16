@@ -268,10 +268,16 @@ export default function ReportsPage() {
                           interval={4}
                         />
                         <YAxis
+                          domain={["auto", "auto"]}
                           tick={{ fill: CHART_THEME.inkFaint, fontSize: 11 }}
                           tickLine={false}
                           axisLine={false}
-                          tickFormatter={(value) => `${Math.round(value / 1000000)}tr`}
+                          tickFormatter={(val) => {
+                            if (Math.abs(val) >= 1000000) {
+                              return `${(val / 1000000).toFixed(1)}tr`;
+                            }
+                            return `${Math.round(val / 1000)}k`;
+                          }}
                         />
                         <Tooltip
                           contentStyle={chartTooltipStyle}

@@ -143,9 +143,8 @@ export default function DashboardPage() {
         ) : (
           <>
             <p
-              className={`font-serif-display text-4xl tabular tracking-tight ${
-                netCashflow >= 0 ? "text-income" : "text-expense"
-              }`}
+              className={`font-serif-display text-4xl tabular tracking-tight ${netCashflow >= 0 ? "text-income" : "text-expense"
+                }`}
             >
               {formatCurrency(netCashflow)}
             </p>
@@ -210,7 +209,7 @@ export default function DashboardPage() {
           {hasChartActivity && (
             <div className="ledger-sheet p-5">
               <p className="text-ink text-sm font-semibold mb-4">
-                7 ngày gần nhất <span className="text-ink-faint font-normal text-xs">(nghìn đ)</span>
+                7 ngày gần nhất <span className="text-ink-faint font-normal text-xs">(nghìn đồng)</span>
               </p>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={chartData} barSize={12} barGap={4}>
@@ -281,9 +280,8 @@ export default function DashboardPage() {
                   {recentTx?.items?.slice(0, 8).map((tx: Transaction) => (
                     <div key={tx.id} className="ledger-row px-4 py-3.5 flex items-center gap-3 hover:bg-paper-deep/40 transition-colors">
                       <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                          tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
-                        }`}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
+                          }`}
                       >
                         {tx.type === "income" ? (
                           <TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />
@@ -300,9 +298,8 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <p
-                        className={`text-sm font-semibold tabular shrink-0 ${
-                          tx.type === "income" ? "text-income" : "text-expense"
-                        }`}
+                        className={`text-sm font-semibold tabular shrink-0 ${tx.type === "income" ? "text-income" : "text-expense"
+                          }`}
                       >
                         {tx.type === "income" ? "+" : "-"}
                         {formatCurrency(tx.amount)}

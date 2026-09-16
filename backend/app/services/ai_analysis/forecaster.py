@@ -137,17 +137,22 @@ def forecast_net_cashflow(
     # ---------------------------------------------------------
 
     if training_days < 7:
-
         avg = float(series.mean())
+        mean_abs = max(float(series.abs().mean()), 100000.0)
+        last_date = series.index.max() if not series.empty else pd.Timestamp.now()
+
+        forecasts = []
+        for day in range(1, days_ahead + 1):
+            future_date = last_date + pd.Timedelta(days=day)
+            dow = future_date.dayofweek
+            # Biến động nhẹ ngày cuối tuần (T7, CN) nếu ít dữ liệu
+            dow_factor = 0.15 if dow in (5, 6) else -0.06
+            val = avg + mean_abs * dow_factor
+            forecasts.append(round(val, 0))
 
         return {
-            "forecast_total": round(
-                avg * days_ahead,
-                0,
-            ),
-            "daily_forecast": [
-                round(avg, 0)
-            ] * days_ahead,
+            "forecast_total": round(sum(forecasts), 0),
+            "daily_forecast": forecasts,
             "residual_std": None,
             "confidence": "thap_du_lieu_it",
             "training_days": training_days,
@@ -234,18 +239,20 @@ def forecast_net_cashflow(
     )
 
     # ---------------------------------------------------------
+    # Day-of-week Seasonality (Chu kỳ theo thứ trong tuần)
+    # ---------------------------------------------------------
+    dow_means = series.groupby(series.index.dayofweek).mean()
+    dow_offsets = (dow_means - mean_daily).to_dict()
+
+    # ---------------------------------------------------------
     # Tạo forecast
     # ---------------------------------------------------------
-    #
-    # Trend được damping thêm theo thời gian:
-    #
-    # ngày đầu -> có một chút trend
-    # ngày xa   -> trend không tiếp tục tăng vô hạn
-    # ---------------------------------------------------------
-
+    last_date = series.index.max()
     forecasts = []
 
     for day in range(1, days_ahead + 1):
+        future_date = last_date + pd.Timedelta(days=day)
+        dow = future_date.dayofweek
 
         # Trend giảm dần khi càng dự báo xa.
         damping = np.exp(
@@ -255,9 +262,12 @@ def forecast_net_cashflow(
             )
         )
 
+        season_offset = float(dow_offsets.get(dow, 0.0)) * 0.85
+
         daily_value = (
             baseline
             + trend_adjustment * damping
+            + season_offset
         )
 
         forecasts.append(
