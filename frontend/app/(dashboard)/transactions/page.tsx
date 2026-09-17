@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionApi } from "@/lib/api-client";
 import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ui/error-banner";
-import { Plus, TrendingUp, TrendingDown, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Receipt, ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 
 type TxType = "all" | "income" | "expense";
 
 export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TxType>("all");
   const [page, setPage] = useState(1);
+
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery<TransactionListResponse>({
     queryKey: ["transactions", typeFilter, page],
@@ -26,6 +28,24 @@ export default function TransactionsPage() {
         })
         .then((r) => r.data),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => transactionApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.removeQueries({ queryKey: ["report"] });
+      queryClient.removeQueries({ queryKey: ["report-full"] });
+    },
+    onError: () => {
+      alert("Xóa giao dịch thất bại. Vui lòng thử lại.");
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa giao dịch này không?")) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const tabs: { key: TxType; label: string }[] = [
     { key: "all", label: "Tất cả" },
@@ -69,9 +89,8 @@ export default function TransactionsPage() {
                 setTypeFilter(tab.key);
                 setPage(1);
               }}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                isSelected ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
-              }`}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${isSelected ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
+                }`}
             >
               {tab.label}
             </button>
@@ -106,12 +125,11 @@ export default function TransactionsPage() {
         {data?.items?.map((tx: Transaction) => (
           <div
             key={tx.id}
-            className="ledger-row px-5 py-4 flex items-center gap-4 hover:bg-paper-deep/40 transition-colors"
+            className="ledger-row px-5 py-4 flex items-center gap-4 hover:bg-paper-deep/40 transition-colors group"
           >
             <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-                tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
-              }`}
+              className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${tx.type === "income" ? "bg-income-soft" : "bg-expense-soft"
+                }`}
             >
               {tx.type === "income" ? (
                 <TrendingUp className="w-5 h-5 text-income" aria-hidden="true" />
@@ -127,14 +145,33 @@ export default function TransactionsPage() {
                 {new Date(tx.transaction_date).toLocaleDateString("vi-VN")} · {CATEGORY_LABELS[tx.category]}
               </p>
             </div>
-            <p
-              className={`text-[15px] font-semibold tabular shrink-0 ${
-                tx.type === "income" ? "text-income" : "text-expense"
-              }`}
-            >
-              {tx.type === "income" ? "+" : "-"}
-              {formatCurrency(tx.amount)}
-            </p>
+            <div className="flex flex-col items-end gap-1">
+              <p
+                className={`text-[15px] font-semibold tabular shrink-0 ${tx.type === "income" ? "text-income" : "text-expense"
+                  }`}
+              >
+                {tx.type === "income" ? "+" : "-"}
+                {formatCurrency(tx.amount)}
+              </p>
+
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Link
+                  href={`/transactions/${tx.id}/edit`}
+                  className="p-1.5 text-ink-muted hover:text-ink hover:bg-paper-deep rounded-md transition-colors"
+                  aria-label="Sửa"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </Link>
+                <button
+                  onClick={() => handleDelete(tx.id)}
+                  disabled={deleteMutation.isPending}
+                  className="p-1.5 text-ink-muted hover:text-expense hover:bg-expense-soft/30 rounded-md transition-colors disabled:opacity-50"
+                  aria-label="Xóa"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         ))}
       </div>

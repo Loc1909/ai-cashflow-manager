@@ -3,7 +3,7 @@ import type {
   ReportResponse,
   MonthlySummary,
 } from "@/lib/types/report";
-import type { TransactionListResponse } from "@/lib/types/transaction";
+import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import { AUTH_TOKEN_KEY } from "@/lib/constants";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -57,6 +57,7 @@ export const transactionApi = {
     page?: number;
     page_size?: number;
   }) => api.get<TransactionListResponse>("/transactions/", { params }),
+  getById: (id: string) => api.get<Transaction>(`/transactions/${id}`).then(res => res.data),
   create: (data: object) => api.post("/transactions/", data),
   update: (id: string, data: object) => api.patch(`/transactions/${id}`, data),
   delete: (id: string) => api.delete(`/transactions/${id}`),
