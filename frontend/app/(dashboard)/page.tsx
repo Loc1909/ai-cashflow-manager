@@ -56,7 +56,11 @@ export default function DashboardPage() {
 
   const summary = report?.summary;
   const insights = report?.insights ?? [];
-  const netCashflow = summary ? summary.total_income - summary.total_expense : 0;
+  // Use the backend-computed net (single source of truth — same value the
+  // AI insights/forecast reason about) instead of recomputing it here.
+  // reports/page.tsx already does this; this page previously recomputed it
+  // independently, which could drift if the two ever rounded differently.
+  const netCashflow = summary ? summary.net ?? summary.total_income - summary.total_expense : 0;
 
   const chartData = useMemo(() => {
     const daysMap = new Map<string, { name: string; thu: number; chi: number }>();

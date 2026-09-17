@@ -146,7 +146,7 @@ class InsightEngine:
             })
 
         # 4) Xu hướng
-        if trend and trend.get("direction") == "giam":
+        if trend and trend.get("direction") == "down":
             insights.append({
                 "level": "warning",
                 "title": "Xu hướng dòng tiền đang xấu đi",
@@ -155,7 +155,7 @@ class InsightEngine:
                 "action": "Xem lại giá bán, chi phí nhập hàng, hoặc lượng khách gần đây "
                           "để tìm nguyên nhân trước khi xu hướng kéo dài.",
             })
-        elif trend and trend.get("direction") == "tang":
+        elif trend and trend.get("direction") == "up":
             insights.append({
                 "level": "good",
                 "title": "Xu hướng dòng tiền đang cải thiện",

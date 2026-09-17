@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { CATEGORIES } from "./constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,22 +22,10 @@ export function formatDate(dateStr: string): string {
   }).format(new Date(dateStr));
 }
 
-export const CATEGORY_LABELS: Record<string, string> = {
-  SALES: "Doanh thu bán hàng",
-  SERVICE: "Doanh thu dịch vụ",
-  OTHER_INCOME: "Thu nhập khác",
-  FOOD: "Thực phẩm / Nguyên liệu",
-  SUPPLIES: "Vật tư / Dụng cụ",
-  SALARY: "Lương nhân viên",
-  UTILITIES: "Điện / Nước / Internet",
-  RENT: "Thuê mặt bằng",
-  TRANSPORT: "Vận chuyển / Xăng xe",
-  MARKETING: "Quảng cáo / Marketing",
-  OTHER: "Khác",
-};
+export const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.value, c.label])
+);
 
-// Ink swatches consistent with the ledger palette — desaturated,
-// printed-ink feel rather than neon SaaS chart colors.
 export const CATEGORY_COLORS: Record<string, string> = {
   SALES: "#2f6f4e",
   SERVICE: "#4d8f6a",

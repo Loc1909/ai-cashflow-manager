@@ -19,6 +19,69 @@ except ImportError:
     _HAS_SKLEARN = False
 
 
+# --------------------------------------------------------------------------
+# Ensemble tuning constants
+#
+# Các hằng số dưới đây quyết định cách 3 thành phần (Exponential Smoothing,
+# Linear Trend, Day-of-week Seasonality) được blend lại với nhau. Giá trị
+# cụ thể được chọn theo kinh nghiệm (empirical), không có công thức toán học
+# "đúng" duy nhất — đặt tên rõ ràng ở đây để dễ tinh chỉnh mà không phải mò
+# lại ý nghĩa của từng con số rải rác trong thân hàm.
+# --------------------------------------------------------------------------
+
+# Dữ liệu lịch sử tối thiểu để chạy ensemble đầy đủ; ít hơn mức này thì dùng
+# fallback đơn giản (mean + biến động nhẹ cuối tuần) vì mọi phương pháp
+# thống kê phức tạp hơn đều không đáng tin với quá ít điểm dữ liệu.
+MIN_TRAINING_DAYS_FOR_ENSEMBLE = 7
+
+# Ngưỡng phân loại "lịch sử ngắn" / "lịch sử trung bình" — dùng để chọn bộ
+# trọng số baseline và trend_weight phù hợp.
+SHORT_HISTORY_THRESHOLD_DAYS = 14
+MEDIUM_HISTORY_THRESHOLD_DAYS = 30
+
+# Hệ số alpha của Exponential Smoothing (mức độ ưu tiên dữ liệu gần đây).
+EXP_SMOOTHING_ALPHA = 0.3
+
+# Trọng số blend giữa EMA (nhạy với biến động gần đây) và Mean (ổn định,
+# chống nhiễu) khi tính baseline. Lịch sử càng ngắn càng ưu tiên Mean vì
+# EMA dễ bị lệch bởi vài điểm dữ liệu đầu.
+BASELINE_EMA_WEIGHT_SHORT_HISTORY = 0.65
+BASELINE_MEAN_WEIGHT_SHORT_HISTORY = 0.35
+BASELINE_EMA_WEIGHT_LONG_HISTORY = 0.75
+BASELINE_MEAN_WEIGHT_LONG_HISTORY = 0.25
+
+# Trọng số cho phép trend ảnh hưởng vào forecast, tăng dần khi có nhiều dữ
+# liệu hơn để tin tưởng xu hướng đo được hơn.
+TREND_WEIGHT_VERY_SHORT_HISTORY = 0.10   # < SHORT_HISTORY_THRESHOLD_DAYS
+TREND_WEIGHT_SHORT_HISTORY = 0.20        # < MEDIUM_HISTORY_THRESHOLD_DAYS
+TREND_WEIGHT_LONG_HISTORY = 0.30         # >= MEDIUM_HISTORY_THRESHOLD_DAYS
+
+# Giới hạn biên độ điều chỉnh mỗi ngày do trend gây ra, theo tỉ lệ % của
+# biên độ trung bình lịch sử — tránh trend ngoại suy phóng đại forecast.
+MAX_DAILY_TREND_ADJUSTMENT_RATIO = 0.25
+
+# Mức độ áp dụng mùa vụ theo thứ trong tuần (giảm nhẹ so với mức đo được từ
+# lịch sử để tránh overfit khi dữ liệu ít).
+SEASONALITY_DAMPING_FACTOR = 0.85
+
+# Biên an toàn: forecast không được vượt quá N lần biên độ trung bình lịch sử.
+SAFETY_BOUND_MULTIPLIER = 2.0
+
+# --- Fallback khi dữ liệu quá ít (< MIN_TRAINING_DAYS_FOR_ENSEMBLE) -------
+WEEKEND_DAYS = (5, 6)  # Thứ 7, Chủ nhật (Monday=0 theo pandas dayofweek)
+WEEKEND_FACTOR = 0.15
+WEEKDAY_FACTOR = -0.06
+# Sàn biên độ trung bình (VND) để tránh chia/nhân cho một biên độ gần 0 khi
+# dữ liệu quá ít và ổn định bất thường.
+MIN_MEAN_ABS_FALLBACK = 100_000.0
+
+# --- Ngưỡng đánh giá confidence -------------------------------------------
+CONFIDENCE_MIN_TRAINING_DAYS = 10
+CONFIDENCE_SHORT_TRAINING_DAYS = 14
+CONFIDENCE_HIGH_RELATIVE_ERROR = 0.5
+CONFIDENCE_MEDIUM_RELATIVE_ERROR = 1.5
+
+
 def _linear_slope(series: pd.Series) -> tuple[float, float]:
     """Trả về slope và residual_std của Linear Regression."""
     y = series.astype(float).to_numpy()
@@ -49,7 +112,7 @@ def _linear_slope(series: pd.Series) -> tuple[float, float]:
 
 def _exp_smoothing_level(
     series: pd.Series,
-    alpha: float = 0.3,
+    alpha: float = EXP_SMOOTHING_ALPHA,
 ) -> float:
     """Tính mức dòng tiền gần đây bằng Exponential Smoothing."""
     y = series.astype(float).to_numpy()
@@ -75,7 +138,7 @@ def _calculate_confidence(
 ) -> str:
     """Đánh giá confidence dựa trên lượng dữ liệu và sai số."""
 
-    if training_days < 10:
+    if training_days < CONFIDENCE_MIN_TRAINING_DAYS:
         return "thap"
 
     if mean_abs <= 0:
@@ -83,15 +146,15 @@ def _calculate_confidence(
 
     relative_error = residual_std / mean_abs
 
-    if training_days < 14:
-        if relative_error < 0.5:
+    if training_days < CONFIDENCE_SHORT_TRAINING_DAYS:
+        if relative_error < CONFIDENCE_HIGH_RELATIVE_ERROR:
             return "trung_binh"
         return "thap"
 
-    if relative_error < 0.5:
+    if relative_error < CONFIDENCE_HIGH_RELATIVE_ERROR:
         return "cao"
 
-    if relative_error < 1.5:
+    if relative_error < CONFIDENCE_MEDIUM_RELATIVE_ERROR:
         return "trung_binh"
 
     return "thap"
@@ -136,9 +199,9 @@ def forecast_net_cashflow(
     # Dữ liệu quá ít
     # ---------------------------------------------------------
 
-    if training_days < 7:
+    if training_days < MIN_TRAINING_DAYS_FOR_ENSEMBLE:
         avg = float(series.mean())
-        mean_abs = max(float(series.abs().mean()), 100000.0)
+        mean_abs = max(float(series.abs().mean()), MIN_MEAN_ABS_FALLBACK)
         last_date = series.index.max() if not series.empty else pd.Timestamp.now()
 
         forecasts = []
@@ -146,7 +209,7 @@ def forecast_net_cashflow(
             future_date = last_date + pd.Timedelta(days=day)
             dow = future_date.dayofweek
             # Biến động nhẹ ngày cuối tuần (T7, CN) nếu ít dữ liệu
-            dow_factor = 0.15 if dow in (5, 6) else -0.06
+            dow_factor = WEEKEND_FACTOR if dow in WEEKEND_DAYS else WEEKDAY_FACTOR
             val = avg + mean_abs * dow_factor
             forecasts.append(round(val, 0))
 
@@ -181,18 +244,18 @@ def forecast_net_cashflow(
 
     exp_level = _exp_smoothing_level(
         series,
-        alpha=0.3,
+        alpha=EXP_SMOOTHING_ALPHA,
     )
 
-    if training_days < 14:
+    if training_days < SHORT_HISTORY_THRESHOLD_DAYS:
         baseline = (
-            0.65 * exp_level
-            + 0.35 * mean_daily
+            BASELINE_EMA_WEIGHT_SHORT_HISTORY * exp_level
+            + BASELINE_MEAN_WEIGHT_SHORT_HISTORY * mean_daily
         )
     else:
         baseline = (
-            0.75 * exp_level
-            + 0.25 * mean_daily
+            BASELINE_EMA_WEIGHT_LONG_HISTORY * exp_level
+            + BASELINE_MEAN_WEIGHT_LONG_HISTORY * mean_daily
         )
 
     # ---------------------------------------------------------
@@ -212,12 +275,12 @@ def forecast_net_cashflow(
     # Không cho trend tích lũy vô hạn trong 30 ngày.
     # ---------------------------------------------------------
 
-    if training_days < 14:
-        trend_weight = 0.10
-    elif training_days < 30:
-        trend_weight = 0.20
+    if training_days < SHORT_HISTORY_THRESHOLD_DAYS:
+        trend_weight = TREND_WEIGHT_VERY_SHORT_HISTORY
+    elif training_days < MEDIUM_HISTORY_THRESHOLD_DAYS:
+        trend_weight = TREND_WEIGHT_SHORT_HISTORY
     else:
-        trend_weight = 0.30
+        trend_weight = TREND_WEIGHT_LONG_HISTORY
 
     # Chỉ cho trend ảnh hưởng một phần vào baseline.
     trend_adjustment = (
@@ -226,7 +289,7 @@ def forecast_net_cashflow(
 
     # Giới hạn ảnh hưởng của trend mỗi ngày.
     max_daily_adjustment = max(
-        mean_abs * 0.25,
+        mean_abs * MAX_DAILY_TREND_ADJUSTMENT_RATIO,
         1.0,
     )
 
@@ -262,7 +325,7 @@ def forecast_net_cashflow(
             )
         )
 
-        season_offset = float(dow_offsets.get(dow, 0.0)) * 0.85
+        season_offset = float(dow_offsets.get(dow, 0.0)) * SEASONALITY_DAMPING_FACTOR
 
         daily_value = (
             baseline
@@ -288,8 +351,8 @@ def forecast_net_cashflow(
     # quy mô lịch sử.
     # ---------------------------------------------------------
 
-    lower_bound = -2.0 * mean_abs
-    upper_bound = 2.0 * mean_abs
+    lower_bound = -SAFETY_BOUND_MULTIPLIER * mean_abs
+    upper_bound = SAFETY_BOUND_MULTIPLIER * mean_abs
 
     blended = np.clip(
         blended,

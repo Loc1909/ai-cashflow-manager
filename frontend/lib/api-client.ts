@@ -24,11 +24,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, clear token and redirect to login
+// Endpoints where a 401 is an *expected* possible outcome (wrong email/
+// password) rather than "your session expired". These must be excluded
+// from the auto-logout redirect below, otherwise a wrong-password attempt
+// on the login form triggers a hard `window.location.href` navigation
+// before the page's own try/catch ever gets to show its error message —
+// the user just sees the login page reload with no feedback.
+const AUTH_ENDPOINTS_EXCLUDED_FROM_AUTO_LOGOUT = ["/auth/login", "/auth/register"];
+
+function isAuthEndpoint(url?: string): boolean {
+  if (!url) return false;
+  return AUTH_ENDPOINTS_EXCLUDED_FROM_AUTO_LOGOUT.some((path) => url.includes(path));
+}
+
+// On 401 from a protected endpoint, clear token and redirect to login.
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
+    const status = error.response?.status;
+    if (status === 401 && !isAuthEndpoint(error.config?.url) && typeof window !== "undefined") {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       window.location.href = "/login";
     }

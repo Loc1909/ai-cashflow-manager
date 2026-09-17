@@ -19,6 +19,7 @@ import {
   Clock,
   ChartPie,
   Info,
+  Activity,
 } from "lucide-react";
 import {
   PieChart,
@@ -33,10 +34,17 @@ import {
   CartesianGrid,
 } from "recharts";
 
+type BreakdownType = "expense" | "income";
+
 export default function ReportsPage() {
   const now = useMemo(() => new Date(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  // Which category pie chart is showing — the backend has always computed
+  // both expense_by_category AND income_by_category (see MonthlySummary),
+  // but only the expense side ever made it into the UI. Toggling here
+  // surfaces the income breakdown data that was already being fetched.
+  const [breakdownType, setBreakdownType] = useState<BreakdownType>("expense");
 
   const { data: report, isLoading, isError } = useQuery<ReportResponse>({
     queryKey: ["report-full", year, month],
@@ -49,6 +57,7 @@ export default function ReportsPage() {
   const trend = report?.trend;
   const cashRunway = report?.cash_runway;
   const forecast = report?.forecast;
+  const incomeVolatility = report?.income_volatility;
 
   const forecastChartData = useMemo(() => {
     if (!forecast?.daily_forecast?.length) return [];
@@ -75,18 +84,25 @@ export default function ReportsPage() {
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
 
-  const expensePieData = useMemo(() => {
+  const breakdownSource = breakdownType === "expense" ? summary?.expense_by_category : summary?.income_by_category;
+
+  const breakdownPieData = useMemo(() => {
     return (
-      summary?.expense_by_category?.map((c) => ({
+      breakdownSource?.map((c) => ({
         name: c.category_label || CATEGORY_LABELS[c.category] || c.category,
         value: c.amount,
         pct: c.share_pct,
         color: CATEGORY_COLORS[c.category] || "#63705f",
       })) ?? []
     );
-  }, [summary?.expense_by_category]);
+  }, [breakdownSource]);
 
   const netCashflow = summary ? summary.net ?? summary.total_income - summary.total_expense : 0;
+
+  const hasAnyBreakdownData =
+    (summary?.expense_by_category?.length ?? 0) > 0 || (summary?.income_by_category?.length ?? 0) > 0;
+
+  const cv = incomeVolatility?.cv ?? null;
 
   return (
     <div className="px-5 lg:px-8 py-5 space-y-6 pb-10 rise-in">
@@ -155,23 +171,23 @@ export default function ReportsPage() {
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
             <div className="lg:col-span-2 space-y-6">
-              {/* Trend & runway chips */}
-              {(trend || (cashRunway && cashRunway.runway_days !== null)) && (
-                <div className="grid grid-cols-2 gap-3">
+              {/* Trend & runway & income volatility chips */}
+              {(trend || (cashRunway && cashRunway.runway_days !== null) || cv !== null) && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {trend && (
                     <div className="ledger-sheet p-4 flex items-center gap-3">
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          trend.direction === "tang"
+                          trend.direction === "up"
                             ? "bg-income-soft"
-                            : trend.direction === "giam"
+                            : trend.direction === "down"
                             ? "bg-expense-soft"
                             : "bg-info-soft"
                         }`}
                       >
-                        {trend.direction === "tang" ? (
+                        {trend.direction === "up" ? (
                           <TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />
-                        ) : trend.direction === "giam" ? (
+                        ) : trend.direction === "down" ? (
                           <TrendingDown className="w-4 h-4 text-expense" aria-hidden="true" />
                         ) : (
                           <Info className="w-4 h-4 text-info" aria-hidden="true" />
@@ -181,6 +197,24 @@ export default function ReportsPage() {
                         <p className="text-ink-faint text-[11px] font-medium uppercase tracking-wide">Xu hướng</p>
                         <p className={`text-sm font-semibold truncate mt-0.5 ${TREND_LABELS[trend.direction]?.color || "text-ink"}`}>
                           {TREND_LABELS[trend.direction]?.label || trend.direction}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {cv !== null && (
+                    <div className="ledger-sheet p-4 flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                          cv > 0.6 ? "bg-expense-soft" : "bg-info-soft"
+                        }`}
+                      >
+                        <Activity className={`w-4 h-4 ${cv > 0.6 ? "text-expense" : "text-info"}`} aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-ink-faint text-[11px] font-medium uppercase tracking-wide">Biến động thu nhập</p>
+                        <p className="text-sm font-semibold text-ink truncate tabular mt-0.5">
+                          CV {cv.toFixed(2)} · {cv > 0.6 ? "Bấp bênh" : "Ổn định"}
                         </p>
                       </div>
                     </div>
@@ -314,7 +348,7 @@ export default function ReportsPage() {
               )}
             </div>
 
-            {/* Side column: AI insights + expense breakdown */}
+            {/* Side column: AI insights + expense/income breakdown */}
             <div className="space-y-6">
               {insights.length > 0 && (
                 <div className="space-y-3">
@@ -330,38 +364,75 @@ export default function ReportsPage() {
                 </div>
               )}
 
-              {expensePieData.length > 0 && (
+              {hasAnyBreakdownData && (
                 <div className="ledger-sheet p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <ChartPie className="w-4 h-4 text-ink-muted" aria-hidden="true" />
-                    <h2 className="text-ink text-sm font-semibold">Cơ cấu chi phí</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ChartPie className="w-4 h-4 text-ink-muted" aria-hidden="true" />
+                      <h2 className="text-ink text-sm font-semibold">
+                        {breakdownType === "expense" ? "Cơ cấu chi phí" : "Cơ cấu thu nhập"}
+                      </h2>
+                    </div>
+                    <div className="inline-flex gap-1 bg-paper p-1 rounded-lg border border-rule text-xs" role="tablist" aria-label="Chọn loại cơ cấu">
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={breakdownType === "expense"}
+                        onClick={() => setBreakdownType("expense")}
+                        className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                          breakdownType === "expense" ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
+                        }`}
+                      >
+                        Chi
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={breakdownType === "income"}
+                        onClick={() => setBreakdownType("income")}
+                        className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                          breakdownType === "income" ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
+                        }`}
+                      >
+                        Thu
+                      </button>
+                    </div>
                   </div>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart>
-                      <Pie data={expensePieData} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={3} dataKey="value" stroke="none">
-                        {expensePieData.map((entry) => (
-                          <Cell key={`pie-cell-${entry.name}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(val) => formatCurrency(Number(val) || 0)}
-                        contentStyle={chartTooltipStyle}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-2 mt-2">
-                    {expensePieData
-                      .slice()
-                      .sort((a, b) => b.value - a.value)
-                      .map((entry) => (
-                        <div key={entry.name} className="flex items-center gap-2.5 text-xs">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: entry.color }} />
-                          <span className="text-ink-muted truncate flex-1">{entry.name}</span>
-                          <span className="text-ink-faint tabular">{entry.pct.toFixed(0)}%</span>
-                          <span className="text-ink font-medium tabular w-24 text-right">{formatCurrency(entry.value)}</span>
-                        </div>
-                      ))}
-                  </div>
+
+                  {breakdownPieData.length === 0 ? (
+                    <p className="text-ink-faint text-xs text-center py-8">
+                      Chưa có dữ liệu {breakdownType === "expense" ? "chi phí" : "thu nhập"} theo danh mục.
+                    </p>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <PieChart>
+                          <Pie data={breakdownPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={3} dataKey="value" stroke="none">
+                            {breakdownPieData.map((entry) => (
+                              <Cell key={`pie-cell-${entry.name}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(val) => formatCurrency(Number(val) || 0)}
+                            contentStyle={chartTooltipStyle}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="space-y-2 mt-2">
+                        {breakdownPieData
+                          .slice()
+                          .sort((a, b) => b.value - a.value)
+                          .map((entry) => (
+                            <div key={entry.name} className="flex items-center gap-2.5 text-xs">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: entry.color }} />
+                              <span className="text-ink-muted truncate flex-1">{entry.name}</span>
+                              <span className="text-ink-faint tabular">{entry.pct.toFixed(0)}%</span>
+                              <span className="text-ink font-medium tabular w-24 text-right">{formatCurrency(entry.value)}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

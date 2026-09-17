@@ -1,28 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionApi } from "@/lib/api-client";
 import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ui/error-banner";
-import { Plus, TrendingUp, TrendingDown, Receipt, ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Receipt,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  CalendarDays,
+} from "lucide-react";
 
 type TxType = "all" | "income" | "expense";
 
+interface MonthFilter {
+  year: number;
+  month: number; // 1-12
+}
+
+function toDateRange(filter: MonthFilter | null): { date_from?: string; date_to?: string } {
+  if (!filter) return {};
+  const { year, month } = filter;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const lastDay = new Date(year, month, 0).getDate(); // day 0 of next month = last day of this month
+  return {
+    date_from: `${year}-${pad(month)}-01`,
+    date_to: `${year}-${pad(month)}-${pad(lastDay)}`,
+  };
+}
+
 export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TxType>("all");
+  // null = "Tất cả" (no date filtering) — this keeps existing behavior as
+  // the default so nobody's current bookmark/workflow changes.
+  const [monthFilter, setMonthFilter] = useState<MonthFilter | null>(null);
   const [page, setPage] = useState(1);
 
+  const now = useMemo(() => new Date(), []);
   const queryClient = useQueryClient();
 
+  const isCurrentOrFutureMonth =
+    !!monthFilter &&
+    (monthFilter.year > now.getFullYear() ||
+      (monthFilter.year === now.getFullYear() && monthFilter.month >= now.getMonth() + 1));
+
+  const goToMonth = (delta: number) => {
+    setMonthFilter((prev) => {
+      const base = prev ?? { year: now.getFullYear(), month: now.getMonth() + 1 };
+      let { year, month } = base;
+      month += delta;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
+      } else if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+      return { year, month };
+    });
+    setPage(1);
+  };
+
+  const resetMonthFilter = () => {
+    setMonthFilter(null);
+    setPage(1);
+  };
+
+  const dateRange = useMemo(() => toDateRange(monthFilter), [monthFilter]);
+
   const { data, isLoading, isError } = useQuery<TransactionListResponse>({
-    queryKey: ["transactions", typeFilter, page],
+    queryKey: ["transactions", typeFilter, monthFilter, page],
     queryFn: () =>
       transactionApi
         .list({
           type: typeFilter === "all" ? undefined : typeFilter,
+          date_from: dateRange.date_from,
+          date_to: dateRange.date_to,
           page,
           page_size: 20,
         })
@@ -71,31 +132,68 @@ export default function TransactionsPage() {
         <ErrorBanner message="Không tải được danh sách giao dịch. Vui lòng thử lại." />
       )}
 
-      {/* Filter tabs */}
-      <div
-        className="inline-flex gap-1 bg-paper-elevated p-1.5 rounded-xl border border-rule"
-        role="tablist"
-        aria-label="Bộ lọc giao dịch"
-      >
-        {tabs.map((tab) => {
-          const isSelected = typeFilter === tab.key;
-          return (
-            <button
-              key={tab.key}
-              id={`tab-${tab.key}`}
-              role="tab"
-              aria-selected={isSelected}
-              onClick={() => {
-                setTypeFilter(tab.key);
-                setPage(1);
-              }}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${isSelected ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
-                }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* Filters: type tabs + month picker */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div
+          className="inline-flex gap-1 bg-paper-elevated p-1.5 rounded-xl border border-rule"
+          role="tablist"
+          aria-label="Bộ lọc giao dịch theo loại"
+        >
+          {tabs.map((tab) => {
+            const isSelected = typeFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                id={`tab-${tab.key}`}
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => {
+                  setTypeFilter(tab.key);
+                  setPage(1);
+                }}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${isSelected ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
+                  }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          className="inline-flex items-center gap-1 bg-paper-elevated p-1.5 rounded-xl border border-rule"
+          aria-label="Bộ lọc giao dịch theo tháng"
+        >
+          <button
+            type="button"
+            onClick={resetMonthFilter}
+            className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5 ${monthFilter === null ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
+              }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
+            Tất cả thời gian
+          </button>
+          <button
+            type="button"
+            onClick={() => goToMonth(-1)}
+            aria-label="Tháng trước"
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink transition-all active:scale-95"
+          >
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+          </button>
+          <span className="text-ink text-sm font-semibold w-16 text-center tabular" aria-live="polite">
+            {monthFilter ? `T${monthFilter.month}/${monthFilter.year}` : "—"}
+          </span>
+          <button
+            type="button"
+            onClick={() => goToMonth(1)}
+            disabled={isCurrentOrFutureMonth}
+            aria-label="Tháng sau"
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink transition-all disabled:opacity-30 active:scale-95"
+          >
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {/* Register */}
@@ -111,7 +209,11 @@ export default function TransactionsPage() {
         {!isLoading && data?.items?.length === 0 && (
           <div className="p-10 text-center flex flex-col items-center justify-center gap-3">
             <Receipt className="w-8 h-8 text-ink-faint" />
-            <p className="text-ink-muted text-sm">Không tìm thấy giao dịch nào</p>
+            <p className="text-ink-muted text-sm">
+              {monthFilter
+                ? `Không có giao dịch nào trong tháng ${monthFilter.month}/${monthFilter.year}`
+                : "Không tìm thấy giao dịch nào"}
+            </p>
             <Link
               href="/transactions/new"
               id="btn-empty-add-tx"

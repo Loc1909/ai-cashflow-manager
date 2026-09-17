@@ -34,8 +34,12 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:3001",
-        "https://*.vercel.app",
     ],
+    # Starlette's CORSMiddleware matches allow_origins as exact strings —
+    # "https://*.vercel.app" never matched anything and every Vercel
+    # preview deployment (random subdomain per branch/PR) was silently
+    # blocked by CORS. Wildcard subdomains need allow_origin_regex instead.
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,4 +57,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
-

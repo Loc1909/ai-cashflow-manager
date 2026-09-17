@@ -46,7 +46,7 @@ class AnomalyItem(BaseModel):
 
 class TrendData(BaseModel):
     slope: float
-    direction: Literal["tang", "giam", "on_dinh", "khong_du_du_lieu"]
+    direction: Literal["up", "down", "stable", "insufficient_data"]
 
 
 class VolatilityData(BaseModel):

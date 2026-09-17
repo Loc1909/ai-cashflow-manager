@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 from typing import Any
 
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 _GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -99,9 +102,9 @@ async def generate_insights(context: dict[str, Any]) -> list[dict[str, Any]]:
     api_key = getattr(settings, "GEMINI_API_KEY", None)
     model = getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash")
     if not api_key:
-        print("❌ Gemini: GEMINI_API_KEY chưa được cấu hình")
+        logger.error("Gemini: GEMINI_API_KEY chưa được cấu hình")
         return []
-    print(f"🤖 Gemini: đang gọi model {model}...")
+    logger.info("Gemini: đang gọi model %s...", model)
 
     prompt = (
         _SYSTEM_INSTRUCTION
@@ -131,20 +134,23 @@ async def generate_insights(context: dict[str, Any]) -> list[dict[str, Any]]:
                 )
                 response.raise_for_status()
                 body = response.json()
-                print("✅ Gemini: API trả response thành công")
+                logger.info("Gemini: API trả response thành công")
                 break
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code
                 # Retry nếu là lỗi transient server (500, 502, 503, 504) hoặc Rate limit (429)
                 if status_code in (429, 500, 502, 503, 504) and attempt < max_retries:
                     wait_time = attempt * 2
-                    print(f"⚠️ Gemini HTTP {status_code} ({exc.response.reason_phrase}). Đang thử lại lần {attempt}/{max_retries} sau {wait_time}s...")
+                    logger.warning(
+                        "Gemini HTTP %s (%s). Đang thử lại lần %d/%d sau %ds...",
+                        status_code, exc.response.reason_phrase, attempt, max_retries, wait_time,
+                    )
                     await asyncio.sleep(wait_time)
                 else:
-                    print(f"❌ Gemini request failed: {exc}")
+                    logger.error("Gemini request failed: %s", exc)
                     return []
             except (httpx.HTTPError, ValueError) as exc:
-                print(f"❌ Gemini request failed: {exc}")
+                logger.error("Gemini request failed: %s", exc)
                 return []
 
     if not body:
@@ -154,14 +160,14 @@ async def generate_insights(context: dict[str, Any]) -> list[dict[str, Any]]:
         candidates = body.get("candidates", [])
         text = candidates[0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError, TypeError) as exc:
-        print(f"❌ Gemini: không lấy được nội dung response: {exc}")
+        logger.error("Gemini: không lấy được nội dung response: %s", exc)
         return []
 
     result = _extract_json(text)
 
     if result:
-        print(f"✅ Gemini: tạo thành công {len(result)} insight(s)")
+        logger.info("Gemini: tạo thành công %d insight(s)", len(result))
     else:
-        print("⚠️ Gemini: response không chứa JSON insight hợp lệ")
+        logger.warning("Gemini: response không chứa JSON insight hợp lệ")
 
     return result

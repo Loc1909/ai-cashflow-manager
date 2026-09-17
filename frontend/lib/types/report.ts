@@ -1,10 +1,10 @@
 export type InsightLevel = "critical" | "warning" | "good" | "info";
 
 export type TrendDirection =
-  | "tang"
-  | "giam"
-  | "on_dinh"
-  | "khong_du_du_lieu";
+  | "up"
+  | "down"
+  | "stable"
+  | "insufficient_data";
 
 export interface CategoryAmount {
   category: string;

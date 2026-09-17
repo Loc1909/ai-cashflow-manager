@@ -132,11 +132,11 @@ class CashflowAnalyzer:
         """Hồi quy tuyến tính trên chuỗi dòng tiền ròng để xác định xu hướng tăng/giảm."""
         series = self.period_series(freq=freq)
         if len(series) < 3:
-            return {"slope": 0.0, "direction": "khong_du_du_lieu"}
+            return {"slope": 0.0, "direction": "insufficient_data"}
         y = series.values.astype(float)
         x = np.arange(len(y))
         slope, intercept = np.polyfit(x, y, 1)
-        direction = "tang" if slope > 1 else ("giam" if slope < -1 else "on_dinh")
+        direction = "up" if slope > 1 else ("down" if slope < -1 else "stable")
         return {"slope": round(float(slope), 2), "direction": direction}
 
     # ---------- Quỹ tiền mặt còn trụ được bao lâu ----------

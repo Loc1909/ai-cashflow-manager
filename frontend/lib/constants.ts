@@ -2,10 +2,10 @@
 export const AUTH_TOKEN_KEY = "access_token";
 
 export const TREND_LABELS: Record<string, { label: string; color: string }> = {
-  tang: { label: "Đang tăng", color: "text-income" },
-  giam: { label: "Đang giảm", color: "text-expense" },
-  on_dinh: { label: "Ổn định", color: "text-info" },
-  khong_du_du_lieu: { label: "Chưa đủ dữ liệu", color: "text-ink-faint" },
+  up: { label: "Đang tăng", color: "text-income" },
+  down: { label: "Đang giảm", color: "text-expense" },
+  stable: { label: "Ổn định", color: "text-info" },
+  insufficient_data: { label: "Chưa đủ dữ liệu", color: "text-ink-faint" },
 };
 
 export interface CategoryOption {

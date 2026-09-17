@@ -24,19 +24,19 @@ class TransactionType(str, enum.Enum):
 
 class TransactionCategory(str, enum.Enum):
     # Income
-    SALES = "SALES"              # Product sales revenue
-    SERVICE = "SERVICE"          # Service revenue
+    SALES = "SALES"  # Product sales revenue
+    SERVICE = "SERVICE"  # Service revenue
     OTHER_INCOME = "OTHER_INCOME"  # Other income
 
     # Expense
-    FOOD = "FOOD"                # Food/ingredients
-    SUPPLIES = "SUPPLIES"        # Supplies/tools
-    SALARY = "SALARY"            # Staff salary
-    UTILITIES = "UTILITIES"      # Electricity/water/internet
-    RENT = "RENT"                # Premises rent
-    TRANSPORT = "TRANSPORT"      # Transport/fuel
-    MARKETING = "MARKETING"      # Advertising/marketing
-    OTHER = "OTHER"              # Other
+    FOOD = "FOOD"  # Food/ingredients
+    SUPPLIES = "SUPPLIES"  # Supplies/tools
+    SALARY = "SALARY"  # Staff salary
+    UTILITIES = "UTILITIES"  # Electricity/water/internet
+    RENT = "RENT"  # Premises rent
+    TRANSPORT = "TRANSPORT"  # Transport/fuel
+    MARKETING = "MARKETING"  # Advertising/marketing
+    OTHER = "OTHER"  # Other
 
 
 class Transaction(Base):
@@ -55,7 +55,18 @@ class Transaction(Base):
     type: Mapped[TransactionType] = mapped_column(
         Enum(TransactionType), nullable=False, index=True
     )
-    amount: Mapped[float] = mapped_column(Numeric(15, 0), nullable=False)
+    # asdecimal=False: by default SQLAlchemy's Numeric returns
+    # decimal.Decimal from the DB driver, not float — that would silently
+    # contradict the `Mapped[float]` type hint above (mypy/IDE thinks it's
+    # a float, the driver actually hands back a Decimal). Every consumer in
+    # this codebase already treats amount as a plain float (Pydantic
+    # schemas, CashflowAnalyzer's `float(_get(t, "amount"))`, the frontend
+    # `number` type), so asdecimal=False makes the runtime type match what
+    # the rest of the code already assumes, instead of relying on implicit
+    # Decimal->float coercion at every read site.
+    amount: Mapped[float] = mapped_column(
+        Numeric(15, 0, asdecimal=False), nullable=False
+    )
     category: Mapped[TransactionCategory] = mapped_column(
         Enum(TransactionCategory), nullable=False, index=True
     )
