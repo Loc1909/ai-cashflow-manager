@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Smart Receipt & Cash Flow Management API",
+    description="Cash Flow Management API",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",

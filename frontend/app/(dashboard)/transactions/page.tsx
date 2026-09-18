@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transactionApi } from "@/lib/api-client";
 import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import { formatCurrency, CATEGORY_LABELS } from "@/lib/utils";
 import { ErrorBanner } from "@/components/ui/error-banner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
   ChevronRight,
   Pencil,
   Trash2,
+  Loader2,
   CalendarDays,
 } from "lucide-react";
 
@@ -43,6 +45,8 @@ export default function TransactionsPage() {
   // the default so nobody's current bookmark/workflow changes.
   const [monthFilter, setMonthFilter] = useState<MonthFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const now = useMemo(() => new Date(), []);
   const queryClient = useQueryClient();
@@ -92,19 +96,69 @@ export default function TransactionsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => transactionApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.removeQueries({ queryKey: ["report"] });
-      queryClient.removeQueries({ queryKey: ["report-full"] });
+
+    // Xóa khỏi UI ngay lập tức
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({
+        queryKey: ["transactions"],
+      });
+
+      const queryKey = ["transactions", typeFilter, monthFilter, page];
+
+      const previous =
+        queryClient.getQueryData<TransactionListResponse>(queryKey);
+
+      queryClient.setQueryData<TransactionListResponse>(
+        queryKey,
+        (old) =>
+          old
+            ? {
+              ...old,
+              items: old.items.filter((t) => t.id !== id),
+              total: Math.max(0, old.total - 1),
+            }
+            : old
+      );
+
+      return { previous, queryKey };
     },
-    onError: () => {
-      alert("Xóa giao dịch thất bại. Vui lòng thử lại.");
+
+    // Nếu API xóa thất bại → khôi phục dữ liệu cũ
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(context.queryKey, context.previous);
+      }
+
+      setDeleteError("Xóa giao dịch thất bại. Vui lòng thử lại.");
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["transactions"],
+      });
+
+      queryClient.removeQueries({
+        queryKey: ["report"],
+      });
+
+      queryClient.removeQueries({
+        queryKey: ["report-full"],
+      });
+    },
+
+    onSettled: () => {
+      setPendingDeleteId(null);
     },
   });
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa giao dịch này không?")) {
-      deleteMutation.mutate(id);
+  const handleDeleteRequest = (id: string) => {
+    setDeleteError(null);
+    setPendingDeleteId(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (pendingDeleteId) {
+      deleteMutation.mutate(pendingDeleteId);
     }
   };
 
@@ -113,6 +167,13 @@ export default function TransactionsPage() {
     { key: "income", label: "Thu" },
     { key: "expense", label: "Chi" },
   ];
+
+  // Tự lùi trang khi trang hiện tại trống sau khi xóa (và không phải trang 1)
+  useEffect(() => {
+    if (!isLoading && data && data.items.length === 0 && page > 1) {
+      setPage((p) => p - 1);
+    }
+  }, [isLoading, data, page]);
 
   return (
     <div className="px-5 lg:px-8 py-5 space-y-5 rise-in">
@@ -259,18 +320,27 @@ export default function TransactionsPage() {
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Link
                   href={`/transactions/${tx.id}/edit`}
-                  className="p-1.5 text-ink-muted hover:text-ink hover:bg-paper-deep rounded-md transition-colors"
+                  aria-disabled={deleteMutation.isPending && pendingDeleteId === tx.id}
+                  onClick={(e) => {
+                    if (deleteMutation.isPending && pendingDeleteId === tx.id) e.preventDefault();
+                  }}
+                  className={`p-1.5 text-ink-muted hover:text-ink hover:bg-paper-deep rounded-md transition-colors ${deleteMutation.isPending && pendingDeleteId === tx.id ? "opacity-40 pointer-events-none" : ""
+                    }`}
                   aria-label="Sửa"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </Link>
                 <button
-                  onClick={() => handleDelete(tx.id)}
-                  disabled={deleteMutation.isPending}
+                  onClick={() => handleDeleteRequest(tx.id)}
+                  disabled={deleteMutation.isPending && pendingDeleteId === tx.id}
                   className="p-1.5 text-ink-muted hover:text-expense hover:bg-expense-soft/30 rounded-md transition-colors disabled:opacity-50"
                   aria-label="Xóa"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  {deleteMutation.isPending && pendingDeleteId === tx.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -304,6 +374,20 @@ export default function TransactionsPage() {
           </button>
         </div>
       )}
+      {deleteError && (
+        <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <ErrorBanner message={deleteError} />
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Xóa giao dịch này?"
+        message="Hành động này không thể hoàn tác."
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

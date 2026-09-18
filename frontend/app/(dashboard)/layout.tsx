@@ -12,6 +12,7 @@ import {
   BookOpen,
   LogOut,
   Plus,
+  UserCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -110,15 +111,26 @@ export default function DashboardLayout({
             </p>
             <p className="text-ink-faint text-xs truncate">{user?.email}</p>
           </div>
-          <button
-            onClick={logout}
-            id="btn-logout"
-            aria-label="Đăng xuất"
-            title="Đăng xuất"
-            className="p-2 rounded-lg text-ink-muted hover:text-expense hover:bg-expense-soft transition-colors shrink-0"
-          >
-            <LogOut className="w-4 h-4" aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <Link
+              href="/profile"
+              id="nav-profile"
+              aria-label="Hồ sơ"
+              title="Hồ sơ"
+              className="p-2 rounded-lg text-ink-muted hover:text-ink hover:bg-paper-elevated transition-colors"
+            >
+              <UserCog className="w-4 h-4" aria-hidden="true" />
+            </Link>
+            <button
+              onClick={logout}
+              id="btn-logout"
+              aria-label="Đăng xuất"
+              title="Đăng xuất"
+              className="p-2 rounded-lg text-ink-muted hover:text-expense hover:bg-expense-soft transition-colors"
+            >
+              <LogOut className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -126,17 +138,28 @@ export default function DashboardLayout({
       <header className="lg:hidden flex items-center justify-between px-5 pt-5 pb-1">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-brass" aria-hidden="true" />
-          <span className="font-serif-display text-base text-ink">Sổ Cái AI</span>
+          <span className="font-serif-display text-base text-ink">Cashflow Pro</span>
         </div>
-        <button
-          onClick={logout}
-          className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-expense active:scale-95 transition-all"
-          title="Đăng xuất"
-          aria-label="Đăng xuất"
-          id="btn-logout-mobile"
-        >
-          <LogOut className="w-4 h-4" aria-hidden="true" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/profile"
+            id="nav-profile-mobile"
+            aria-label="Hồ sơ"
+            title="Hồ sơ"
+            className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-ink active:scale-95 transition-all"
+          >
+            <UserCog className="w-4 h-4" aria-hidden="true" />
+          </Link>
+          <button
+            onClick={logout}
+            className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-expense active:scale-95 transition-all"
+            title="Đăng xuất"
+            aria-label="Đăng xuất"
+            id="btn-logout-mobile"
+          >
+            <LogOut className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 pb-24 lg:pb-10 min-w-0" id="main-content">

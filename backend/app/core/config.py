@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    PROJECT_NAME: str = "Receipt Cashflow AI"
+    PROJECT_NAME: str = "Cashflow Pro"
     DEBUG: bool = False
     API_V1_PREFIX: str = "/api/v1"
 

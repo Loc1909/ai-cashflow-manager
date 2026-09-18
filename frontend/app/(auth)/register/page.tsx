@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { Loader2, Mail, Lock, User, Store, BookOpen } from "lucide-react";
+import { Loader2, Mail, Lock, User, Store, BookOpen, Eye, EyeOff } from "lucide-react";
 
 const registerSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const { login } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -82,7 +83,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm rise-in">
           <div className="lg:hidden flex items-center gap-2 justify-center mb-8">
             <BookOpen className="w-6 h-6 text-brass" aria-hidden="true" />
-            <span className="font-serif-display text-xl text-ink">Sổ Cái AI</span>
+            <span className="font-serif-display text-xl text-ink">Cashflow Pro</span>
           </div>
 
           <h1 className="font-serif-display text-2xl text-ink text-center lg:text-left">
@@ -150,10 +151,19 @@ export default function RegisterPage() {
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
                 <input
                   {...register("password")}
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Tối thiểu 6 ký tự"
-                  className="w-full bg-paper border border-rule rounded-xl pl-10 pr-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brass/40 focus:border-brass transition"
+                  className="w-full bg-paper border border-rule rounded-xl pl-10 pr-11 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brass/40 focus:border-brass transition"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-muted transition"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               {errors.password && (
                 <p className="text-expense text-xs mt-1.5">{errors.password.message}</p>

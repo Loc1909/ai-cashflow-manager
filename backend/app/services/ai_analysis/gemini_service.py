@@ -1,7 +1,7 @@
 """
 gemini_service.py
 -----------------
-Lớp LLM tùy chọn cho Receipt Cashflow AI.
+Lớp LLM tùy chọn cho Cashflow Pro.
 
 ML/thống kê vẫn là nguồn dữ liệu chính. Gemini chỉ nhận các chỉ số đã
 được tính toán và chuyển chúng thành nhận xét + khuyến nghị tiếng Việt.

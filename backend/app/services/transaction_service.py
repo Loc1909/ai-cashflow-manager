@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import Transaction, TransactionCategory, TransactionType
 from app.schemas.transaction import TransactionCreate, TransactionUpdate
+from app.schemas.transaction import _validate_category_matches_type
 
 
 async def create(
@@ -79,12 +80,11 @@ async def list_transactions(
     return list(result.scalars().all()), total
 
 
-async def update(
-    db: AsyncSession,
-    transaction: Transaction,
-    data: TransactionUpdate,
-) -> Transaction:
+async def update(db, transaction, data: TransactionUpdate):
     update_data = data.model_dump(exclude_unset=True)
+    final_type = update_data.get("type", transaction.type)
+    final_category = update_data.get("category", transaction.category)
+    _validate_category_matches_type(final_type, final_category)  # import từ schemas
     for field, value in update_data.items():
         setattr(transaction, field, value)
     await db.flush()

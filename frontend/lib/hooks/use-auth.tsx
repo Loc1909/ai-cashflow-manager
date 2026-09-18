@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  updateProfile: (data: { full_name?: string; business_name?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -52,9 +53,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/login";
   };
 
+  // PATCH /auth/me — endpoint đã tồn tại ở backend (UserUpdate schema +
+  // authApi.updateMe) nhưng trước đây chưa có nơi nào trên FE gọi tới.
+  const updateProfile = async (data: { full_name?: string; business_name?: string }) => {
+    const res = await authApi.updateMe(data);
+    setUser(res.data);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, logout, isAuthenticated: !!user }}
+      value={{ user, isLoading, login, logout, isAuthenticated: !!user, updateProfile }}
     >
       {children}
     </AuthContext.Provider>
