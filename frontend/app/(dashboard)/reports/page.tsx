@@ -204,7 +204,6 @@ function ReportsPageContent() {
 
       {!isLoading && summary && (
         <>
-          {/* Summary row */}
           <div className="ledger-sheet grid grid-cols-3 divide-x divide-dashed divide-rule">
             <div className="p-4 text-center">
               <p className="text-ink-faint text-xs font-medium mb-1.5">Tổng thu</p>
@@ -224,7 +223,6 @@ function ReportsPageContent() {
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
             <div className="lg:col-span-2 space-y-6">
-              {/* Trend & runway & income volatility chips */}
               {(trend || (cashRunway && cashRunway.runway_days !== null) || cv !== null) && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {trend && (
@@ -291,7 +289,6 @@ function ReportsPageContent() {
                 </div>
               )}
 
-              {/* Forecast */}
               {forecast && (
                 <div className="ledger-sheet p-5 lg:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -366,7 +363,6 @@ function ReportsPageContent() {
                 </div>
               )}
 
-              {/* Anomalies */}
               {anomalies.length > 0 && (
                 <div className="ledger-sheet border-l-4 border-expense p-5 space-y-4">
                   <div className="flex items-center gap-2">
@@ -397,7 +393,6 @@ function ReportsPageContent() {
               )}
             </div>
 
-            {/* Side column: AI insights + expense/income breakdown */}
             <div className="space-y-6">
               {insights.length > 0 && (
                 <div className="space-y-3">

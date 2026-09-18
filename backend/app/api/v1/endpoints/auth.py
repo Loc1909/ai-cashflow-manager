@@ -16,7 +16,6 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
     summary="Register a new user account",
 )
 async def register(data: UserRegister, db: DbSession) -> UserRead:
-    # Check duplicate email
     existing = await db.execute(select(User).where(User.email == data.email))
     if existing.scalar_one_or_none():
         raise HTTPException(

@@ -134,7 +134,6 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Mobile top bar */}
       <header className="lg:hidden flex items-center justify-between px-5 pt-5 pb-1 safe-top">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-brass" aria-hidden="true" />
@@ -166,7 +165,6 @@ export default function DashboardLayout({
         <div className="max-w-3xl lg:max-w-4xl mx-auto">{children}</div>
       </main>
 
-      {/* Mobile bottom nav — styled like a ticket-tab strip */}
       <nav
         aria-label="Điều hướng chính"
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom"

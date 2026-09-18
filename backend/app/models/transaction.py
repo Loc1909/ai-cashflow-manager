@@ -23,20 +23,17 @@ class TransactionType(str, enum.Enum):
 
 
 class TransactionCategory(str, enum.Enum):
-    # Income
-    SALES = "SALES"  # Product sales revenue
-    SERVICE = "SERVICE"  # Service revenue
-    OTHER_INCOME = "OTHER_INCOME"  # Other income
-
-    # Expense
-    FOOD = "FOOD"  # Food/ingredients
-    SUPPLIES = "SUPPLIES"  # Supplies/tools
-    SALARY = "SALARY"  # Staff salary
-    UTILITIES = "UTILITIES"  # Electricity/water/internet
-    RENT = "RENT"  # Premises rent
-    TRANSPORT = "TRANSPORT"  # Transport/fuel
-    MARKETING = "MARKETING"  # Advertising/marketing
-    OTHER = "OTHER"  # Other
+    SALES = "SALES"
+    SERVICE = "SERVICE"
+    OTHER_INCOME = "OTHER_INCOME"
+    FOOD = "FOOD"
+    SUPPLIES = "SUPPLIES"
+    SALARY = "SALARY"
+    UTILITIES = "UTILITIES"
+    RENT = "RENT"
+    TRANSPORT = "TRANSPORT"
+    MARKETING = "MARKETING"
+    OTHER = "OTHER"
 
 
 class Transaction(Base):
@@ -86,7 +83,6 @@ class Transaction(Base):
         nullable=False,
     )
 
-    # Relationships
     user: Mapped["User"] = relationship("User", lazy="select")  # type: ignore[name-defined]
 
     def __repr__(self) -> str:

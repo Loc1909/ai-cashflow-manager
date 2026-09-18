@@ -1,4 +1,3 @@
-// Centralized keys used by the auth flow.
 export const AUTH_TOKEN_KEY = "access_token";
 
 export const TREND_LABELS: Record<string, { label: string; color: string }> = {

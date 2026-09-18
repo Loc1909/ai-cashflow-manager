@@ -12,10 +12,7 @@ from app.models import Base  # noqa: F401 — ensures all models are registered
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    # Startup: tables are managed by Alembic migrations, but for dev convenience
-    # we keep engine available
     yield
-    # Shutdown: close DB connections
     await engine.dispose()
 
 
@@ -28,7 +25,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow Next.js dev server and Vercel deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

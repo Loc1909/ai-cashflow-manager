@@ -13,7 +13,6 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach JWT token from localStorage to every request
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -37,7 +36,6 @@ function isAuthEndpoint(url?: string): boolean {
   return AUTH_ENDPOINTS_EXCLUDED_FROM_AUTO_LOGOUT.some((path) => url.includes(path));
 }
 
-// On 401 from a protected endpoint, clear token and redirect to login.
 api.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -50,7 +48,6 @@ api.interceptors.response.use(
   }
 );
 
-// --- Auth ---
 export const authApi = {
   register: (data: { email: string; password: string; full_name?: string; business_name?: string }) =>
     api.post("/auth/register", data),
@@ -61,7 +58,6 @@ export const authApi = {
     api.patch("/auth/me", data),
 };
 
-// --- Transactions ---
 export const transactionApi = {
   list: (params?: {
     type?: string;
@@ -77,8 +73,6 @@ export const transactionApi = {
   delete: (id: string) => api.delete(`/transactions/${id}`),
 };
 
-
-// --- Reports ---
 export const reportApi = {
   monthly: (year: number, month: number) =>
     api.get<ReportResponse>("/reports/monthly", {

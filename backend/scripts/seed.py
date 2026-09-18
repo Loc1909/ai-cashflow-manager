@@ -3,7 +3,6 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-# Add backend directory to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import select
@@ -42,12 +41,10 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
     txs = []
     
     if business_type == "tap_hoa":
-        # 30-day history for grocery store
         for i in range(30, -1, -1):
             t_date = today - timedelta(days=i)
             day_of_week = t_date.weekday()
             
-            # Daily sales (higher on weekend)
             sales_amount = 3200000 + (1500000 if day_of_week in (5, 6) else 0) + ((i * 123456) % 800000)
             txs.append(
                 Transaction(
@@ -61,7 +58,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                 )
             )
             
-            # Inventory supplies (every 4 days)
             if i % 4 == 0:
                 txs.append(
                     Transaction(
@@ -75,7 +71,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                     )
                 )
             
-            # Utilities once a month (around day 10)
             if i == 10:
                 txs.append(
                     Transaction(
@@ -89,7 +84,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                     )
                 )
 
-            # Rent once a month (around day 25)
             if i == 25:
                 txs.append(
                     Transaction(
@@ -108,7 +102,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
             t_date = today - timedelta(days=i)
             day_of_week = t_date.weekday()
             
-            # Daily coffee sales
             sales_amount = 2500000 + (1200000 if day_of_week in (5, 6) else 0) + ((i * 234567) % 600000)
             txs.append(
                 Transaction(
@@ -122,7 +115,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                 )
             )
 
-            # Coffee beans & milk supplies (every 3 days)
             if i % 3 == 0:
                 txs.append(
                     Transaction(
@@ -136,7 +128,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                     )
                 )
 
-            # Staff salary on day 15
             if i == 15:
                 txs.append(
                     Transaction(
@@ -150,7 +141,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                     )
                 )
 
-            # Marketing & Ads on day 5
             if i == 5:
                 txs.append(
                     Transaction(
@@ -169,7 +159,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
             t_date = today - timedelta(days=i)
             day_of_week = t_date.weekday()
             
-            # Daily fashion sales
             sales_amount = 4500000 + (2500000 if day_of_week in (5, 6) else 0) + ((i * 345678) % 1200000)
             txs.append(
                 Transaction(
@@ -183,7 +172,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                 )
             )
 
-            # Bulk inventory import twice a month (day 28, day 12)
             if i in (28, 12):
                 txs.append(
                     Transaction(
@@ -197,7 +185,6 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
                     )
                 )
 
-            # Shipping / Transport (every 2 days)
             if i % 2 == 0:
                 txs.append(
                     Transaction(
@@ -237,7 +224,6 @@ async def seed_data():
             else:
                 print(f"ℹ️ Tài khoản đã tồn tại: {user.email}")
                 
-            # Check existing transactions
             tx_count_res = await db.execute(select(Transaction).where(Transaction.user_id == user.id))
             existing_txs = tx_count_res.scalars().all()
             

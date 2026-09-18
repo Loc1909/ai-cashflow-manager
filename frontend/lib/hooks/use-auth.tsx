@@ -53,8 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/login";
   };
 
-  // PATCH /auth/me — endpoint đã tồn tại ở backend (UserUpdate schema +
-  // authApi.updateMe) nhưng trước đây chưa có nơi nào trên FE gọi tới.
   const updateProfile = async (data: { full_name?: string; business_name?: string }) => {
     const res = await authApi.updateMe(data);
     setUser(res.data);

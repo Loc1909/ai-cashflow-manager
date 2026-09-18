@@ -1,5 +1,4 @@
 services:
-  # PostgreSQL Database
   db:
     image: postgres:16-alpine
     container_name: cashflow-db
@@ -18,7 +17,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # FastAPI Backend
   backend:
     build:
       context: ./backend
@@ -40,7 +38,6 @@ services:
       sh -c "alembic upgrade head && 
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
-  # Adminer Web Database GUI
   adminer:
     image: adminer
     container_name: cashflow-adminer

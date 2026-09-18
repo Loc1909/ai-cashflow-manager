@@ -99,7 +99,6 @@ export default function DashboardPage() {
         <ErrorBanner message="Không tải được dữ liệu mới nhất. Vui lòng thử tải lại trang." />
       )}
 
-      {/* Hero ledger summary */}
       <div className="relative ledger-sheet receipt-edge px-6 py-6 pb-8">
         <div className="flex items-center gap-2 mb-1">
           <Wallet className="w-4 h-4 text-brass" aria-hidden="true" />
@@ -155,7 +154,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Quick actions */}
       <div className="grid grid-cols-2 gap-4">
         <Link
           href="/reports"
@@ -186,7 +184,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start space-y-6 lg:space-y-0">
-        {/* Main column */}
         <div className="lg:col-span-2 space-y-6">
           {hasChartActivity && (
             <div className="ledger-sheet p-5">
@@ -222,7 +219,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Recent transactions */}
           <div>
             <div className="flex items-center justify-between mb-3 px-1">
               <h2 className="text-ink text-sm font-semibold">Giao dịch gần đây</h2>
@@ -294,7 +290,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* AI insights column */}
         {isReportLoading ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1 mb-1">
