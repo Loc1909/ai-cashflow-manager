@@ -70,7 +70,7 @@ export default function DashboardLayout({
       >
         <div className="flex items-center gap-2 px-2 mb-10">
           <BookOpen className="w-5 h-5 text-brass" aria-hidden="true" />
-          <span className="font-serif-display text-lg text-ink">Cashflow Pro</span>
+          <span className="font-serif-display text-lg text-ink" translate="no">Cashflow Pro</span>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -135,10 +135,10 @@ export default function DashboardLayout({
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden flex items-center justify-between px-5 pt-5 pb-1">
+      <header className="lg:hidden flex items-center justify-between px-5 pt-5 pb-1 safe-top">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-brass" aria-hidden="true" />
-          <span className="font-serif-display text-base text-ink">Cashflow Pro</span>
+          <span className="font-serif-display text-base text-ink" translate="no">Cashflow Pro</span>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -146,13 +146,13 @@ export default function DashboardLayout({
             id="nav-profile-mobile"
             aria-label="Hồ sơ"
             title="Hồ sơ"
-            className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-ink active:scale-95 transition-all"
+            className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-ink active:scale-95 transition-colors"
           >
             <UserCog className="w-4 h-4" aria-hidden="true" />
           </Link>
           <button
             onClick={logout}
-            className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-expense active:scale-95 transition-all"
+            className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-expense active:scale-95 transition-colors"
             title="Đăng xuất"
             aria-label="Đăng xuất"
             id="btn-logout-mobile"

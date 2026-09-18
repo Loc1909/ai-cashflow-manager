@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ export default function EditTransactionPage() {
   const params = useParams();
   const id = params.id as string;
   const qc = useQueryClient();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { data: transaction, isLoading, isError } = useQuery({
     queryKey: ["transaction", id],
@@ -21,20 +23,22 @@ export default function EditTransactionPage() {
 
   const handleSubmit = async (data: TransactionFormOutput) => {
     try {
+      setSubmitError(null);
       await transactionApi.update(id, data);
       qc.removeQueries({ queryKey: ["transactions"] });
       qc.removeQueries({ queryKey: ["report"] });
       qc.removeQueries({ queryKey: ["report-full"] });
       router.push("/transactions");
-    } catch (e) {
-      alert("Lỗi khi cập nhật giao dịch. Vui lòng thử lại.");
+    } catch {
+      setSubmitError("Cập nhật giao dịch thất bại. Vui lòng thử lại.");
     }
   };
 
   if (isLoading) {
     return (
-      <div className="px-5 lg:px-8 py-10 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-ink-muted" />
+      <div className="px-5 lg:px-8 py-10 flex justify-center items-center gap-2">
+        <Loader2 className="w-8 h-8 animate-spin text-ink-muted" aria-hidden="true" />
+        <span className="sr-only">Đang tải…</span>
       </div>
     );
   }
@@ -44,8 +48,9 @@ export default function EditTransactionPage() {
       <div className="px-5 lg:px-8 py-5 max-w-lg mx-auto">
         <ErrorBanner message="Không tìm thấy giao dịch hoặc có lỗi xảy ra." />
         <button
+          type="button"
           onClick={() => router.back()}
-          className="mt-4 text-ink-muted underline"
+          className="mt-4 text-ink-muted underline hover:text-ink transition-colors"
         >
           Quay lại
         </button>
@@ -60,16 +65,15 @@ export default function EditTransactionPage() {
           type="button"
           onClick={() => router.back()}
           aria-label="Quay lại"
-          className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-ink transition"
+          className="p-2 rounded-xl bg-paper-elevated border border-rule text-ink-muted hover:text-ink transition-colors"
         >
           <ChevronLeft className="w-4 h-4" aria-hidden="true" />
         </button>
-        <h1 className="font-serif-display text-xl text-ink">Sửa giao dịch</h1>
+        <h1 className="font-serif-display text-xl text-ink text-balance">Sửa giao dịch</h1>
       </div>
 
-      {/* Rendered only once `transaction` has loaded above, so defaultValues
-          is always populated from the real record — no useEffect+reset()
-          dance needed to sync async data into the form. */}
+      {submitError && <ErrorBanner message={submitError} />}
+
       <TransactionForm
         defaultValues={{
           type: transaction.type,
@@ -81,7 +85,7 @@ export default function EditTransactionPage() {
         }}
         onSubmit={handleSubmit}
         submitLabel="Lưu thay đổi"
-        submittingLabel="Đang lưu..."
+        submittingLabel="Đang lưu…"
       />
     </div>
   );

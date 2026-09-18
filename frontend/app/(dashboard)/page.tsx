@@ -160,7 +160,7 @@ export default function DashboardPage() {
         <Link
           href="/reports"
           id="btn-quick-reports"
-          className="ledger-sheet p-4 flex items-center gap-3 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
+          className="ledger-sheet p-4 flex items-center gap-3 hover:-translate-y-0.5 active:scale-[0.98] transition-[transform]"
         >
           <div className="w-10 h-10 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
             <BarChart2 className="w-5 h-5 text-info" aria-hidden="true" />
@@ -173,7 +173,7 @@ export default function DashboardPage() {
         <Link
           href="/transactions/new"
           id="btn-quick-add"
-          className="ledger-sheet p-4 flex items-center gap-3 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
+          className="ledger-sheet p-4 flex items-center gap-3 hover:-translate-y-0.5 active:scale-[0.98] transition-[transform]"
         >
           <div className="w-10 h-10 rounded-xl bg-income-soft flex items-center justify-center shrink-0">
             <Plus className="w-5 h-5 text-income" aria-hidden="true" />
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                 <>
                   {recentTx?.items?.length === 0 && (
                     <div className="p-8 text-center text-ink-faint text-sm flex flex-col items-center gap-3">
-                      <Wallet className="w-8 h-8 text-ink-faint" />
+                      <Wallet className="w-8 h-8 text-ink-faint" aria-hidden="true" />
                       <p>Chưa có giao dịch nào.</p>
                       <Link href="/transactions/new" className="text-brass font-semibold hover:text-brass-dark transition-colors text-sm">
                         + Thêm giao dịch đầu tiên

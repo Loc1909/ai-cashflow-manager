@@ -11,7 +11,7 @@ import {
 } from "@/lib/schemas/transaction";
 
 const inputCls =
-  "w-full bg-paper border border-rule rounded-xl px-4 py-3 text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brass/40 focus:border-brass transition";
+  "w-full bg-paper border border-rule rounded-xl px-4 py-3 text-ink text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 focus-visible:border-brass transition-[border-color,box-shadow]";
 
 interface TransactionFormProps {
   /** Initial values. For the edit page, pass this only once the record has
@@ -41,7 +41,7 @@ export function TransactionForm({
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<TransactionFormInput, any, TransactionFormOutput>({
+  } = useForm<TransactionFormInput, unknown, TransactionFormOutput>({
     resolver: zodResolver(transactionSchema),
     defaultValues,
   });
@@ -50,8 +50,7 @@ export function TransactionForm({
   const filteredCats = CATEGORIES.filter((c) => c.type === txType);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="ledger-sheet p-5 space-y-4">
-      {/* Type stamp toggle */}
+    <form onSubmit={handleSubmit(onSubmit)} className="ledger-sheet p-5 space-y-4" autoComplete="off">
       <div className="flex gap-2" role="group" aria-label="Loại giao dịch">
         {(["expense", "income"] as const).map((t) => (
           <button
@@ -61,7 +60,7 @@ export function TransactionForm({
               setValue("type", t);
               setValue("category", t === "expense" ? "OTHER" : "SALES");
             }}
-            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${
+            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-[background-color,color,border-color] ${
               txType === t
                 ? t === "expense"
                   ? "bg-expense-soft text-expense border-expense/40"
@@ -74,24 +73,30 @@ export function TransactionForm({
         ))}
       </div>
 
-      {/* Amount */}
       <div>
-        <label htmlFor="field-amount" className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+        <label
+          htmlFor="field-amount"
+          className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block"
+        >
           Số tiền (VND) *
         </label>
         <input
           id="field-amount"
           {...register("amount")}
           type="number"
+          inputMode="numeric"
+          autoComplete="off"
           placeholder="0"
-          className="w-full bg-paper border border-rule rounded-xl px-4 py-3.5 text-ink text-2xl font-serif-display tabular focus:outline-none focus:ring-2 focus:ring-brass/40 focus:border-brass transition"
+          className="w-full bg-paper border border-rule rounded-xl px-4 py-3.5 text-ink text-2xl font-serif-display tabular focus:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 focus-visible:border-brass transition-[border-color,box-shadow]"
         />
         {errors.amount && <p className="text-expense text-xs mt-1">{errors.amount.message}</p>}
       </div>
 
-      {/* Category */}
       <div>
-        <label htmlFor="field-category" className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+        <label
+          htmlFor="field-category"
+          className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block"
+        >
           Danh mục *
         </label>
         <select id="field-category" {...register("category")} className={inputCls}>
@@ -103,37 +108,44 @@ export function TransactionForm({
         </select>
       </div>
 
-      {/* Merchant */}
       <div>
-        <label htmlFor="field-merchant" className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+        <label
+          htmlFor="field-merchant"
+          className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block"
+        >
           Tên cửa hàng / đơn vị
         </label>
         <input
           id="field-merchant"
           {...register("merchant_name")}
-          placeholder="VD: Chợ đầu mối, Siêu thị..."
+          autoComplete="organization"
+          placeholder="VD: Chợ đầu mối, Siêu thị…"
           className={inputCls}
         />
       </div>
 
-      {/* Date */}
       <div>
-        <label htmlFor="field-date" className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+        <label
+          htmlFor="field-date"
+          className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block"
+        >
           Ngày *
         </label>
         <input id="field-date" {...register("transaction_date")} type="date" className={inputCls} />
       </div>
 
-      {/* Description */}
       <div>
-        <label htmlFor="field-description" className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block">
+        <label
+          htmlFor="field-description"
+          className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1.5 block"
+        >
           Ghi chú
         </label>
         <textarea
           id="field-description"
           {...register("description")}
           rows={2}
-          placeholder="Ghi chú thêm..."
+          placeholder="Ghi chú thêm…"
           className={`${inputCls} resize-none`}
         />
       </div>
@@ -142,7 +154,7 @@ export function TransactionForm({
         type="submit"
         disabled={isSubmitting}
         id="btn-save-transaction"
-        className="w-full bg-ink hover:bg-ink/90 disabled:opacity-60 text-paper font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+        className="w-full bg-ink hover:bg-ink/90 disabled:opacity-60 text-paper font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
       >
         {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
         {isSubmitting ? submittingLabel : submitLabel}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Suspense, useMemo, useCallback, startTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { reportApi } from "@/lib/api-client";
 import type { ReportResponse, InsightItem, AnomalyItem } from "@/lib/types/report";
@@ -9,6 +10,7 @@ import { CHART_THEME, chartTooltipStyle } from "@/lib/chart-theme";
 import { TREND_LABELS } from "@/lib/constants";
 import { ErrorBanner } from "@/components/ui/error-banner";
 import { InsightCard } from "@/components/ui/insight-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sparkles,
   ChevronLeft,
@@ -36,15 +38,64 @@ import {
 
 type BreakdownType = "expense" | "income";
 
+const CONFIDENCE_LABELS: Record<string, string> = {
+  cao: "Cao",
+  trung_binh: "Trung bình",
+  thap: "Thấp",
+  thap_du_lieu_it: "Thấp (ít dữ liệu)",
+  khong_du_du_lieu: "Chưa đủ dữ liệu",
+};
+
 export default function ReportsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="px-5 lg:px-8 py-5 space-y-4">
+          <Skeleton className="h-8 w-32" />
+          <div className="grid grid-cols-3 gap-3">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+        </div>
+      }
+    >
+      <ReportsPageContent />
+    </Suspense>
+  );
+}
+
+function ReportsPageContent() {
   const now = useMemo(() => new Date(), []);
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  // Which category pie chart is showing — the backend has always computed
-  // both expense_by_category AND income_by_category (see MonthlySummary),
-  // but only the expense side ever made it into the UI. Toggling here
-  // surfaces the income breakdown data that was already being fetched.
-  const [breakdownType, setBreakdownType] = useState<BreakdownType>("expense");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const yearParam = Number(searchParams.get("year"));
+  const monthParam = Number(searchParams.get("month"));
+  const year =
+    Number.isInteger(yearParam) && yearParam >= 2000 ? yearParam : now.getFullYear();
+  const month =
+    Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12
+      ? monthParam
+      : now.getMonth() + 1;
+  const breakdownType: BreakdownType =
+    searchParams.get("breakdown") === "income" ? "income" : "expense";
+
+  const replaceParams = useCallback(
+    (patch: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null || value === "") params.delete(key);
+        else params.set(key, value);
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      });
+    },
+    [pathname, router, searchParams]
+  );
 
   const { data: report, isLoading, isError } = useQuery<ReportResponse>({
     queryKey: ["report-full", year, month],
@@ -66,20 +117,22 @@ export default function ReportsPage() {
 
   const prevMonth = () => {
     if (month === 1) {
-      setYear((y) => y - 1);
-      setMonth(12);
+      replaceParams({ year: String(year - 1), month: "12" });
     } else {
-      setMonth((m) => m - 1);
+      replaceParams({ year: String(year), month: String(month - 1) });
     }
   };
 
   const nextMonth = () => {
     if (month === 12) {
-      setYear((y) => y + 1);
-      setMonth(1);
+      replaceParams({ year: String(year + 1), month: "1" });
     } else {
-      setMonth((m) => m + 1);
+      replaceParams({ year: String(year), month: String(month + 1) });
     }
+  };
+
+  const setBreakdownType = (type: BreakdownType) => {
+    replaceParams({ breakdown: type === "expense" ? null : type });
   };
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
@@ -113,7 +166,7 @@ export default function ReportsPage() {
             type="button"
             onClick={prevMonth}
             aria-label="Tháng trước"
-            className="p-1.5 rounded-lg text-ink-muted hover:text-ink transition-all active:scale-95"
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink transition-colors active:scale-95"
           >
             <ChevronLeft className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -125,7 +178,7 @@ export default function ReportsPage() {
             onClick={nextMonth}
             disabled={isCurrentMonth}
             aria-label="Tháng sau"
-            className="p-1.5 rounded-lg text-ink-muted hover:text-ink transition-all disabled:opacity-30 active:scale-95"
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink transition-colors disabled:opacity-30 active:scale-95"
           >
             <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -213,8 +266,10 @@ export default function ReportsPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-ink-faint text-[11px] font-medium uppercase tracking-wide">Biến động thu nhập</p>
-                        <p className="text-sm font-semibold text-ink truncate tabular mt-0.5">
-                          CV {cv.toFixed(2)} · {cv > 0.6 ? "Bấp bênh" : "Ổn định"}
+                        <p className="text-sm font-semibold text-ink tabular mt-0.5 leading-snug">
+                          <span className="whitespace-nowrap">CV {cv.toFixed(2)}</span>
+                          <span className="text-ink-faint font-normal"> · </span>
+                          <span>{cv > 0.6 ? "Bấp bênh" : "Ổn định"}</span>
                         </p>
                       </div>
                     </div>
@@ -260,13 +315,7 @@ export default function ReportsPage() {
                       <div className="rounded-xl border border-brass/25 bg-brass-soft px-3 py-2">
                         <p className="text-xs text-brass-dark/70">Độ tin cậy</p>
                         <p className="text-sm font-semibold text-brass-dark">
-                          {forecast.confidence === "cao"
-                            ? "Cao"
-                            : forecast.confidence === "trung_binh"
-                            ? "Trung bình"
-                            : forecast.confidence === "thap"
-                            ? "Thấp"
-                            : forecast.confidence}
+                          {CONFIDENCE_LABELS[forecast.confidence] ?? forecast.confidence}
                         </p>
                       </div>
                     </div>
@@ -342,7 +391,7 @@ export default function ReportsPage() {
 
               {summary.transaction_count === 0 && (
                 <div className="ledger-sheet p-10 text-center flex flex-col items-center gap-3 border-dashed">
-                  <Info className="w-7 h-7 text-ink-faint" />
+                  <Info className="w-7 h-7 text-ink-faint" aria-hidden="true" />
                   <p className="text-ink-muted text-sm">Chưa có dữ liệu giao dịch trong tháng {month}/{year}</p>
                 </div>
               )}
@@ -379,7 +428,7 @@ export default function ReportsPage() {
                         role="tab"
                         aria-selected={breakdownType === "expense"}
                         onClick={() => setBreakdownType("expense")}
-                        className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                        className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
                           breakdownType === "expense" ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
                         }`}
                       >
@@ -390,7 +439,7 @@ export default function ReportsPage() {
                         role="tab"
                         aria-selected={breakdownType === "income"}
                         onClick={() => setBreakdownType("income")}
-                        className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                        className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
                           breakdownType === "income" ? "bg-ink text-paper" : "text-ink-muted hover:text-ink"
                         }`}
                       >

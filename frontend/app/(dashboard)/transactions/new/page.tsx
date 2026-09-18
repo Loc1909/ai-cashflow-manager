@@ -41,7 +41,7 @@ export default function NewTransactionPage() {
         }}
         onSubmit={handleSubmit}
         submitLabel="Lưu giao dịch"
-        submittingLabel="Đang lưu..."
+        submittingLabel="Đang lưu…"
       />
     </div>
   );

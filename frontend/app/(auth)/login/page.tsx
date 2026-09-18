@@ -40,7 +40,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-dvh grid lg:grid-cols-2 bg-paper">
-      {/* Brand panel — hidden on mobile, ledger cover art on desktop */}
       <div className="hidden lg:flex flex-col justify-between bg-ink text-paper px-16 py-14 relative overflow-hidden">
         <div
           aria-hidden
@@ -53,7 +52,9 @@ export default function LoginPage() {
         />
         <div className="relative flex items-center gap-2.5">
           <BookOpen className="w-6 h-6 text-brass-soft" aria-hidden="true" />
-          <span className="font-serif-display text-lg tracking-tight">Cashflow Pro</span>
+          <span className="font-serif-display text-lg tracking-tight" translate="no">
+            Cashflow Pro
+          </span>
         </div>
 
         <div className="relative max-w-md">
@@ -75,15 +76,16 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Form panel */}
-      <div className="flex items-center justify-center p-6 sm:p-10">
+      <main id="main-content" className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm rise-in">
           <div className="lg:hidden flex items-center gap-2 justify-center mb-8">
             <BookOpen className="w-6 h-6 text-brass" aria-hidden="true" />
-            <span className="font-serif-display text-xl text-ink">Cashflow Pro</span>
+            <span className="font-serif-display text-xl text-ink" translate="no">
+              Cashflow Pro
+            </span>
           </div>
 
-          <h1 className="font-serif-display text-2xl text-ink text-center lg:text-left">
+          <h1 className="font-serif-display text-2xl text-ink text-center lg:text-left text-balance">
             Đăng nhập
           </h1>
           <p className="text-ink-muted text-sm mt-1.5 text-center lg:text-left">
@@ -92,16 +94,25 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-7">
             <div>
-              <label className="block text-xs font-semibold text-ink-muted mb-1.5 uppercase tracking-wide">
+              <label
+                htmlFor="login-email"
+                className="block text-xs font-semibold text-ink-muted mb-1.5 uppercase tracking-wide"
+              >
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
+                <Mail
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint"
+                  aria-hidden="true"
+                />
                 <input
+                  id="login-email"
                   {...register("email")}
                   type="email"
+                  autoComplete="email"
+                  spellCheck={false}
                   placeholder="ban@cuahang.vn"
-                  className="w-full bg-paper border border-rule rounded-xl pl-10 pr-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brass/40 focus:border-brass transition"
+                  className="w-full bg-paper border border-rule rounded-xl pl-10 pr-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 focus-visible:border-brass transition-[border-color,box-shadow]"
                 />
               </div>
               {errors.email && (
@@ -110,25 +121,36 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-ink-muted mb-1.5 uppercase tracking-wide">
+              <label
+                htmlFor="login-password"
+                className="block text-xs font-semibold text-ink-muted mb-1.5 uppercase tracking-wide"
+              >
                 Mật khẩu
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
+                <Lock
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint"
+                  aria-hidden="true"
+                />
                 <input
+                  id="login-password"
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full bg-paper border border-rule rounded-xl pl-10 pr-11 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brass/40 focus:border-brass transition"
+                  className="w-full bg-paper border border-rule rounded-xl pl-10 pr-11 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 focus-visible:border-brass transition-[border-color,box-shadow]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  tabIndex={-1}
                   aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-muted transition"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-muted transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-4 h-4" aria-hidden="true" />
+                  )}
                 </button>
               </div>
               {errors.password && (
@@ -137,7 +159,11 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-expense-soft border border-expense/25 rounded-xl px-3.5 py-2.5 text-expense text-sm">
+              <div
+                role="alert"
+                aria-live="polite"
+                className="bg-expense-soft border border-expense/25 rounded-xl px-3.5 py-2.5 text-expense text-sm"
+              >
                 {error}
               </div>
             )}
@@ -146,21 +172,24 @@ export default function LoginPage() {
               type="submit"
               disabled={isSubmitting}
               id="btn-login"
-              className="w-full bg-ink hover:bg-ink/90 disabled:opacity-60 disabled:cursor-not-allowed text-paper font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-ledger"
+              className="w-full bg-ink hover:bg-ink/90 disabled:opacity-60 disabled:cursor-not-allowed text-paper font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-ledger"
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+              {isSubmitting ? "Đang đăng nhập…" : "Đăng nhập"}
             </button>
           </form>
 
           <p className="text-center text-ink-muted text-sm mt-6">
             Chưa có tài khoản?{" "}
-            <Link href="/register" className="text-brass font-semibold hover:text-brass-dark transition">
+            <Link
+              href="/register"
+              className="text-brass font-semibold hover:text-brass-dark transition-colors"
+            >
               Đăng ký ngay
             </Link>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
