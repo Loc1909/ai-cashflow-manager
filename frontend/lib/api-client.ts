@@ -6,7 +6,7 @@ import type {
 import type { Transaction, TransactionListResponse } from "@/lib/types/transaction";
 import type { AuthResponse } from "@/lib/types/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 // Access/refresh token giờ nằm trong cookie httpOnly do BACKEND set —
 // JS không còn đọc/ghi token qua localStorage nữa (giảm bề mặt bị đánh
