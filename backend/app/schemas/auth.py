@@ -16,11 +16,6 @@ class UserLogin(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,3 +30,14 @@ class UserRead(BaseModel):
 class UserUpdate(BaseModel):
     full_name: str | None = Field(None, max_length=255)
     business_name: str | None = Field(None, max_length=255)
+
+
+class AuthResponse(BaseModel):
+    """
+    Trả về sau login/register/refresh. Token KHÔNG còn nằm trong body JSON
+    — chúng được set qua httpOnly cookie (xem app/core/cookies.py) nên
+    JavaScript phía frontend không đọc được, giảm rủi ro bị đánh cắp qua
+    XSS. Body chỉ trả thông tin user để frontend cập nhật UI.
+    """
+
+    user: UserRead

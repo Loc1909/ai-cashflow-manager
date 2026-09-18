@@ -1,47 +1,48 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cookies import ACCESS_COOKIE_NAME
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User
 
-# auto_error=False: with the default HTTPBearer(), a request with NO
-# Authorization header at all gets rejected by FastAPI itself with a 403
-# before this function ever runs. A request with a present-but-invalid/
-# expired token, on the other hand, reaches get_current_user() and gets a
-# 401 from the explicit check below. Two different failure reasons that
-# both mean "not authenticated" shouldn't produce two different status
-# codes — the frontend's axios interceptor only reacts to 401. Disabling
-# auto_error lets us handle the "missing token" case ourselves and return
-# the same 401 both ways.
-security = HTTPBearer(auto_error=False)
-
 DbSession = Annotated[AsyncSession, Depends(get_db)]
-BearerToken = Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
 
 
 async def get_current_user(
-    token: BearerToken,
     db: DbSession,
+    access_token: Annotated[str | None, Cookie(alias=ACCESS_COOKIE_NAME)] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ) -> User:
-    if token is None:
+    """
+    Đọc access token ưu tiên từ cookie httpOnly `access_token` — đây là
+    đường dùng chính của web app (trình duyệt tự đính kèm cookie, JS không
+    cần và không thể đọc token).
+
+    Fallback sang header `Authorization: Bearer <token>` nếu không có
+    cookie, để Swagger UI (/docs) và các API client khác (không gửi cookie
+    của web app) vẫn dùng được — cùng một hàm decode_access_token, cùng
+    một mức bảo mật, chỉ khác nơi lấy token.
+    """
+    token = access_token
+    if not token and authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id_str = decode_access_token(token.credentials)
+    user_id_str = decode_access_token(token)
     if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
         )
 
     try:

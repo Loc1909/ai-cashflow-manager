@@ -1,4 +1,5 @@
-export const AUTH_TOKEN_KEY = "access_token";
+// AUTH_TOKEN_KEY đã bị loại bỏ — token giờ nằm trong cookie httpOnly do
+// backend set/đọc, frontend không còn lưu/đọc token qua localStorage nữa.
 
 export const TREND_LABELS: Record<string, { label: string; color: string }> = {
   up: { label: "Đang tăng", color: "text-income" },

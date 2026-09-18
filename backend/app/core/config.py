@@ -21,7 +21,27 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
+
+    # Access token JWT giờ sống NGẮN — một khi đã phát hành thì không thể
+    # thu hồi trước hạn, nên phải ngắn để giảm thiệt hại nếu bị lộ (XSS,
+    # log rò rỉ...). "Đăng nhập lâu dài" chuyển sang cho refresh token đảm
+    # nhiệm, vì refresh token lưu hash ở DB nên revoke được bất cứ lúc nào.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # Cookie httpOnly cho access_token / refresh_token.
+    # COOKIE_SECURE=False chỉ hợp lệ khi chạy local qua http://localhost.
+    # PHẢI đặt True khi deploy production (bắt buộc chạy https).
+    # Nếu frontend/backend khác domain (cross-site), COOKIE_SAMESITE phải
+    # là "none" (và COOKIE_SECURE=True) để trình duyệt còn chịu gửi cookie.
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_DOMAIN: str | None = None
+
+    # Rate limit cho các endpoint nhạy cảm (chống brute-force), cú pháp
+    # theo package `limits`: "<số lần>/<đơn vị thời gian>".
+    RATE_LIMIT_LOGIN: str = "5/minute"
+    RATE_LIMIT_REGISTER: str = "5/minute"
 
     GEMINI_API_KEY: str
     GEMINI_MODEL: str = "gemini-3.5-flash"

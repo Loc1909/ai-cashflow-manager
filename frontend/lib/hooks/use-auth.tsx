@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { authApi } from "@/lib/api-client";
-import { AUTH_TOKEN_KEY } from "@/lib/constants";
 
 interface User {
   id: string;
@@ -28,27 +27,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
     authApi
       .getMe()
       .then((res) => setUser(res.data))
-      .catch(() => localStorage.removeItem(AUTH_TOKEN_KEY))
+      .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await authApi.login({ email, password });
-    localStorage.setItem(AUTH_TOKEN_KEY, res.data.access_token);
+    await authApi.login({ email, password });
     const meRes = await authApi.getMe();
     setUser(meRes.data);
   };
 
   const logout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
     setUser(null);
     window.location.href = "/login";
   };

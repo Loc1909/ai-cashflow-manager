@@ -23,19 +23,31 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(subject: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
-    payload = {"sub": subject, "exp": expire}
+    """
+    Access token JWT sống NGẮN (mặc định 15 phút — xem
+    settings.ACCESS_TOKEN_EXPIRE_MINUTES). Trước đây token này sống 7 ngày
+    và đóng luôn vai trò "phiên đăng nhập dài hạn" — vấn đề là JWT không
+    thể thu hồi trước hạn (stateless), nên nếu lộ thì không cách nào chặn.
+    Giờ "đăng nhập dài hạn" do refresh token đảm nhiệm (xem
+    app/services/token_service.py) — refresh token lưu hash ở DB nên revoke
+    được, còn access token chỉ cần sống đủ ngắn để nếu lộ thì tự hết hạn
+    nhanh.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {"sub": subject, "type": "access", "exp": expire}
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def decode_access_token(token: str) -> str | None:
-    """Returns the subject (user_id) from the token, or None if invalid."""
+    """
+    Trả về subject (user_id) nếu token hợp lệ VÀ đúng loại "access".
+    Kiểm tra `type` claim để một refresh token (nếu vô tình gửi nhầm vào
+    header Authorization) không thể bị dùng như access token.
+    """
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        return payload.get("sub")
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except JWTError:
         return None
+    if payload.get("type") != "access":
+        return None
+    return payload.get("sub")

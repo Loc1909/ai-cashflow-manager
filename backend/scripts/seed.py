@@ -204,7 +204,7 @@ def generate_transactions_for_user(user_id, business_type: str, today: date) -> 
 async def seed_data():
     today = date.today()
     async with AsyncSessionLocal() as db:
-        print("🌱 Bắt đầu khởi tạo dữ liệu mẫu (Seeding data)...")
+        print("[seed] Bat dau khoi tao du lieu mau (Seeding data)...")
         
         for u_info in DEMO_USERS:
             result = await db.execute(select(User).where(User.email == u_info["email"]))
@@ -220,9 +220,9 @@ async def seed_data():
                 db.add(user)
                 await db.flush()
                 await db.refresh(user)
-                print(f"✅ Đã tạo tài khoản: {user.email} / {u_info['password']} ({user.business_name})")
+                print(f"[ok] Da tao tai khoan: {user.email} / {u_info['password']} ({user.business_name})")
             else:
-                print(f"ℹ️ Tài khoản đã tồn tại: {user.email}")
+                print(f"[info] Tai khoan da ton tai: {user.email}")
                 
             tx_count_res = await db.execute(select(Transaction).where(Transaction.user_id == user.id))
             existing_txs = tx_count_res.scalars().all()
@@ -230,12 +230,12 @@ async def seed_data():
             if not existing_txs:
                 sample_txs = generate_transactions_for_user(user.id, u_info["transactions_generator"], today)
                 db.add_all(sample_txs)
-                print(f"  └─ Đã tạo {len(sample_txs)} giao dịch mẫu 30 ngày cho {user.email}")
+                print(f"  Da tao {len(sample_txs)} giao dich mau 30 ngay cho {user.email}")
             else:
-                print(f"  └─ Đã có {len(existing_txs)} giao dịch, bỏ qua tạo giao dịch mới.")
+                print(f"  Da co {len(existing_txs)} giao dich, bo qua tao giao dich moi.")
                 
         await db.commit()
-        print("\n🎉 Khởi tạo dữ liệu thành công hoàn tất!")
+        print("\n[ok] Khoi tao du lieu thanh cong!")
 
 
 if __name__ == "__main__":
