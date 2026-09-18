@@ -1,0 +1,51 @@
+{
+  "name": "Cashflow Pro — Quản Lý Thu Chi",
+  "short_name": "Cashflow Pro",
+  "description": "Quản lý thu chi thông minh cho hộ kinh doanh nhỏ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf6ec",
+  "theme_color": "#fbf6ec",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "business"],
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Báo cáo",
+      "url": "/reports",
+      "description": "Xem báo cáo và phân tích AI"
+    },
+    {
+      "name": "Thêm giao dịch",
+      "url": "/transactions/new",
+      "description": "Thêm giao dịch thủ công"
+    }
+  ]
+}

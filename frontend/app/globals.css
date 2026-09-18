@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #fbf6ec;           /* page background */
+  --color-paper-elevated: #f6efdf;  /* card surface */
+  --color-paper-deep: #efe4c9;      /* pressed / deep surface */
+  --color-rule: #ddd0ac;            /* hairline rules */
+  --color-rule-soft: #e9dfc4;
+
+  --color-ink: #22301f;             /* primary text — deep ledger green-black */
+  --color-ink-muted: #63705f;
+  --color-ink-faint: #9aa392;
+
+  --color-brass: #a9721f;           /* primary accent — brass stamp */
+  --color-brass-dark: #7f5416;
+  --color-brass-soft: #f0e0bd;
+
+  --color-income: #2f6f4e;          /* forest ink */
+  --color-income-soft: #e2eee3;
+  --color-expense: #a13d34;         /* sealing-wax red */
+  --color-expense-soft: #f3e1dc;
+  --color-info: #345170;            /* navy ink */
+  --color-info-soft: #e2e9ef;
+  --color-warning: #a9721f;
+  --color-warning-soft: #f0e0bd;
+
+  --font-serif: var(--font-lora), "Noto Serif", Georgia, serif;
+  --font-sans: var(--font-plex), "Be Vietnam Pro", system-ui, sans-serif;
+
+  --shadow-ledger: 0 1px 0 rgba(34, 48, 31, 0.04), 0 10px 24px -14px rgba(34, 48, 31, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  background: var(--color-paper);
+  background-image:
+    linear-gradient(var(--color-rule-soft) 1px, transparent 1px);
+  background-size: 100% 2.15rem;
+  background-position: 0 6.4rem;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  overscroll-behavior-y: contain;
+}
+
+/* Kill the ruled background inside elevated surfaces so the paper-lines
+   effect only ever shows through empty page margins. */
+.ledger-sheet,
+.ledger-nav,
+input,
+select,
+textarea {
+  background-image: none;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-rule); border-radius: 3px; }
+
+/* ---- Surfaces --------------------------------------------------------- */
+.ledger-sheet {
+  background: var(--color-paper-elevated);
+  border: 1px solid var(--color-rule);
+  border-radius: 18px;
+  box-shadow: var(--shadow-ledger);
+}
+
+.ledger-row {
+  border-bottom: 1px dashed var(--color-rule);
+}
+.ledger-row:last-child {
+  border-bottom: none;
+}
+
+/* A perforated "receipt" edge used on the hero summary card */
+.receipt-edge::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 12px;
+  background-image: radial-gradient(circle at 8px 0, var(--color-paper) 6px, transparent 6.5px);
+  background-size: 16px 12px;
+  background-repeat: repeat-x;
+}
+
+/* ---- Type --------------------------------------------------------------*/
+.font-serif-display {
+  font-family: var(--font-serif);
+  font-feature-settings: "onum" 0, "lnum" 1;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ---- Motion (one deliberate reveal, nothing scattered) ----------------*/
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise-in {
+  animation: riseIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes stampIn {
+  from { opacity: 0; transform: scale(0.9) rotate(-3deg); }
+  to   { opacity: 1; transform: scale(1) rotate(-2deg); }
+}
+.stamp-in {
+  animation: stampIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .rise-in, .stamp-in { animation: none; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* Safe area for iOS notch / home indicator */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Focus ring consistent with the ink palette */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+}
