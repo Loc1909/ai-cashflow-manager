@@ -17,7 +17,6 @@ services:
     plan: free
     region: singapore # đổi sang region gần user của bạn (oregon, frankfurt...)
     healthCheckPath: /health
-    preDeployCommand: "alembic upgrade head"
     envVars:
       - key: DATABASE_URL
         sync: false # nhập tay trong Dashboard — connection string Neon
