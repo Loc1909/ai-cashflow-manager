@@ -1,0 +1,47 @@
+# render.yaml — Infrastructure as Code cho Render.
+# Đặt file này ở gốc repo backend, sau đó vào Render Dashboard > New >
+# Blueprint > chọn repo GitHub này. Render sẽ tự đọc file này và tạo đúng
+# service theo khai báo dưới đây, không cần bấm tay từng bước.
+#
+# LƯU Ý: file này KHÔNG khai báo database — vì ta cố tình dùng Neon/Aiven
+# bên ngoài (free vĩnh viễn) thay vì Render Postgres (free chỉ 30 ngày).
+# DATABASE_URL được nhập tay 1 lần trong Render Dashboard (Environment)
+# sau khi tạo service, không set cứng ở đây để tránh commit connection
+# string kèm password vào Git.
+
+services:
+  - type: web
+    name: cashflow-pro-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore # đổi sang region gần user của bạn (oregon, frankfurt...)
+    healthCheckPath: /health
+    preDeployCommand: "alembic upgrade head"
+    envVars:
+      - key: DATABASE_URL
+        sync: false # nhập tay trong Dashboard — connection string Neon
+      - key: DB_SSL_REQUIRE
+        value: "true" # Neon/Aiven bắt buộc SSL — local dev (docker-compose) thì để false
+      - key: SECRET_KEY
+        generateValue: true # Render tự sinh 1 secret ngẫu nhiên, an toàn hơn tự nghĩ
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "15"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "30"
+      - key: COOKIE_SECURE
+        value: "true" # BẮT BUỘC true trên production (chạy https)
+      - key: COOKIE_SAMESITE
+        value: "none" # backend (Render) và frontend (Vercel) khác domain → bắt buộc "none"
+      - key: RATE_LIMIT_LOGIN
+        value: "5/minute"
+      - key: RATE_LIMIT_REGISTER
+        value: "5/minute"
+      - key: GEMINI_API_KEY
+        sync: false # nhập tay trong Dashboard
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: DEBUG
+        value: "false"
