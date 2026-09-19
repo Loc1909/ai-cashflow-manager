@@ -108,6 +108,11 @@ async def health_check() -> JSONResponse:
     )
 
 
+@app.get("/")
+def root():
+    return {"message": "Cash Flow Management API"}
+
+
 if __name__ == "__main__":
     import uvicorn
 

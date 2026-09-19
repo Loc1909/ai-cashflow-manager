@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
 
     DATABASE_URL: PostgresDsn
+    # Neon/Aiven bắt buộc SSL và trả connection string dạng
+    # "...?sslmode=require" (cú pháp kiểu psycopg2) — nhưng driver asyncpg
+    # KHÔNG hiểu tham số "sslmode" này và sẽ lỗi nếu để nguyên trong URL.
+    # validate_db_url() bên dưới tự strip query string khỏi URL; cờ này
+    # bật cấu hình SSL đúng cách qua connect_args (xem database.py).
+    # Local dev (Postgres trong docker-compose) không cần SSL → để False.
+    # Production (Neon/Aiven) → đặt DB_SSL_REQUIRE=true trong env.
+    DB_SSL_REQUIRE: bool = False
 
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
@@ -51,9 +59,22 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def validate_db_url(cls, v: str) -> str:
-        if isinstance(v, str) and v.startswith("postgresql://"):
-            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return v
+        if not isinstance(v, str):
+            return v
+        if v.startswith("postgres://"):
+            # Một số provider (Neon cũ, Heroku-style) trả về scheme rút gọn
+            # "postgres://" thay vì "postgresql://" — asyncpg driver của
+            # SQLAlchemy chỉ nhận "postgresql+asyncpg://".
+            v = v.replace("postgres://", "postgresql://", 1)
+        if v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # Bỏ toàn bộ query string (?sslmode=require&channel_binding=...):
+        # đây là tham số kiểu psycopg2/libpq mà asyncpg không hiểu, truyền
+        # thẳng vào sẽ gây lỗi "connect() got an unexpected keyword
+        # argument". SSL cho Neon/Aiven được bật riêng qua connect_args
+        # trong database.py (dựa trên settings.DB_SSL_REQUIRE), không qua
+        # query string.
+        return v.split("?", 1)[0]
 
 
 settings = Settings()  # type: ignore[call-arg]
